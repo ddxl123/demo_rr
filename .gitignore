@@ -1,0 +1,10 @@
+/.vs
+/.vscode
+/bin
+/obj
+/assets
+db-log.db
+db.db
+myDatabase-log.db
+myDatabase.db
+/.idea
