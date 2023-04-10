@@ -16,9 +16,6 @@ namespace Tool
         public static string ASSETS_SINGLE = $"{ASSETS}/single";
         public static string ICON = $"{ASSETS}/icon.ico";
 
-        public static string LOOP_EVENT_TIME_CYCLE_SIMULTANEOUSLY = "loop_event_time_cycle_simultaneously";
-        public static string LOOP_EVENT_TIME_CYCLE_IN_ORDER = "loop_event_time_cycle_in_order";
-
         public static int GET_DEFAULT_HEIGHT() => 800;
         public static int GET_DEFAULT_WIDTH() => Screen.GetBounds(Point.Empty).Width * 2 / 3;
     }

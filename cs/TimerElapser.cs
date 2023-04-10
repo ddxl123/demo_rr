@@ -7,7 +7,7 @@ public class TimerElapser
 
     public static void TimerElapsed(object? sender, ElapsedEventArgs e)
     {
-        var singles = LiteDBSingleton.Instance.GetCollection<Single>(Single.TABLE_NAME).FindAll().OrderByDescending((e) => e.Priority1);
+        var singles = Db.Instance.GetCollection<Single>(Single.TABLE_NAME).FindAll().OrderByDescending((e) => e.Priority1);
 
         Rectangle? r = GetRectangle(singles);
         if (r.HasValue)

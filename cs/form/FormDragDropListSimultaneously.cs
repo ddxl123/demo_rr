@@ -47,7 +47,7 @@ public class FormDragDropListSimultaneously : Form
         eventFlowLayoutPanel.Controls.Clear();
         singleList.Clear();
         // 重新向数据库中获取。
-        var result = LiteDBSingleton.Instance.GetCollection<Single>(Single.TABLE_NAME).Find(LiteDBSingleton.Instance.eventModeQuery(EventMode.Simultaneously));
+        var result = Db.Instance.GetCollection<Single>(Single.TABLE_NAME).Find(Db.Instance.eventModeQuery(EventMode.Simultaneously));
         singleList.AddRange(result.OrderByDescending((s) => s.Priority1));
 
         eventFlowLayoutPanel.Controls.Add(ControlTool.separator());
@@ -95,7 +95,7 @@ public class FormDragDropListSimultaneously : Form
             {
                 Global.startingEventMode = EventMode.Simultaneously;
                 button.Text = "暂停";
-                LiteDBSingleton.Instance.setLoopTime(LiteDBSingleton.Instance.GetValueByKey(K.LOOP_EVENT_TIME_CYCLE_SIMULTANEOUSLY), EventMode.Simultaneously);
+                Db.Instance.setLoopTime(Db.Instance.GetValueByKey(Db.LOOP_EVENT_TIME_CYCLE_SIMULTANEOUSLY), EventMode.Simultaneously);
                 Global.timer.Start();
                 bodyFlowLayoutPanel.Visible = false;
                 Console.WriteLine("启动成功");
@@ -149,7 +149,7 @@ public class FormDragDropListSimultaneously : Form
             }
             similarityThreshold.Text = v.ToString();
             item.SimilarityThreshold = v;
-            LiteDBSingleton.Instance.insertOrModifySingleEntity(item);
+            Db.Instance.insertOrModifySingleEntity(item);
         };
         ToolTip toolTip1 = new ToolTip();
         toolTip1.IsBalloon = true;
@@ -181,7 +181,7 @@ public class FormDragDropListSimultaneously : Form
         positionBlockTypeBox.SelectedIndexChanged += (s, e) =>
         {
             item.PositionBlockType = Tool.Method.GetEnumMembers<PositionBlockType>()[positionBlockTypeBox.SelectedIndex];
-            LiteDBSingleton.Instance.insertOrModifySingleEntity(item);
+            Db.Instance.insertOrModifySingleEntity(item);
         };
 
         positionBlockTypeRowPanel.Controls.Add(positionBlockTypeLabel);
@@ -205,15 +205,15 @@ public class FormDragDropListSimultaneously : Form
         addButton.Scale(new SizeF(2, 2));
         addButton.MouseClick += (s, e) =>
         {
-            var maxSingleResult = LiteDBSingleton.Instance.GetCollection<Single>(Single.TABLE_NAME)
-            .Find(LiteDBSingleton.Instance.eventModeQuery(EventMode.Simultaneously)).OrderByDescending((e) => e.Priority1).FirstOrDefault();
+            var maxSingleResult = Db.Instance.GetCollection<Single>(Single.TABLE_NAME)
+            .Find(Db.Instance.eventModeQuery(EventMode.Simultaneously)).OrderByDescending((e) => e.Priority1).FirstOrDefault();
             if (maxSingleResult == null)
             {
-                LiteDBSingleton.Instance.insertOrModifySingleEntity(new Single(0, null, null, null, EventMode.Simultaneously) { Id = null });
+                Db.Instance.insertOrModifySingleEntity(new Single(0, null, null, null, EventMode.Simultaneously) { Id = null });
             }
             else
             {
-                LiteDBSingleton.Instance.insertOrModifySingleEntity(new Single(maxSingleResult.Priority1 + 1, null, null, null, EventMode.Simultaneously) { Id = null });
+                Db.Instance.insertOrModifySingleEntity(new Single(maxSingleResult.Priority1 + 1, null, null, null, EventMode.Simultaneously) { Id = null });
             }
             ReShowItems();
         };
@@ -234,11 +234,11 @@ public class FormDragDropListSimultaneously : Form
         timeLabel2.AutoSize = true;
         var timeBox = new TextBox();
 
-        timeBox.Text = LiteDBSingleton.Instance.GetValueByKey(K.LOOP_EVENT_TIME_CYCLE_SIMULTANEOUSLY);
-        LiteDBSingleton.Instance.setLoopTime(LiteDBSingleton.Instance.GetValueByKey(K.LOOP_EVENT_TIME_CYCLE_SIMULTANEOUSLY), EventMode.Simultaneously);
+        timeBox.Text = Db.Instance.GetValueByKey(Db.LOOP_EVENT_TIME_CYCLE_SIMULTANEOUSLY);
+        Db.Instance.setLoopTime(Db.Instance.GetValueByKey(Db.LOOP_EVENT_TIME_CYCLE_SIMULTANEOUSLY), EventMode.Simultaneously);
         timeBox.Leave += (s, e) =>
         {
-            timeBox.Text = LiteDBSingleton.Instance.setLoopTime(timeBox.Text, EventMode.Simultaneously).ToString();
+            timeBox.Text = Db.Instance.setLoopTime(timeBox.Text, EventMode.Simultaneously).ToString();
         };
         loopTimePanel.Controls.Add(timeLabel1);
         loopTimePanel.Controls.Add(timeBox);
@@ -284,8 +284,8 @@ public class FormDragDropListSimultaneously : Form
                 int tempPriority = singleList[current].Priority1;
                 singleList[current].Priority1 = singleList[last].Priority1;
                 singleList[last].Priority1 = tempPriority;
-                LiteDBSingleton.Instance.insertOrModifySingleEntity(singleList[current]);
-                LiteDBSingleton.Instance.insertOrModifySingleEntity(singleList[last]);
+                Db.Instance.insertOrModifySingleEntity(singleList[current]);
+                Db.Instance.insertOrModifySingleEntity(singleList[last]);
                 ReShowItems();
             }
         };
@@ -303,8 +303,8 @@ public class FormDragDropListSimultaneously : Form
                 int tempPriority = singleList[current].Priority1;
                 singleList[current].Priority1 = singleList[next].Priority1;
                 singleList[next].Priority1 = tempPriority;
-                LiteDBSingleton.Instance.insertOrModifySingleEntity(singleList[current]);
-                LiteDBSingleton.Instance.insertOrModifySingleEntity(singleList[next]);
+                Db.Instance.insertOrModifySingleEntity(singleList[current]);
+                Db.Instance.insertOrModifySingleEntity(singleList[next]);
                 ReShowItems();
             }
         };
@@ -363,7 +363,7 @@ public class FormDragDropListSimultaneously : Form
                 item.Visible = true;
             }
 
-            LiteDBSingleton.Instance.insertOrModifySingleEntity(item);
+            Db.Instance.insertOrModifySingleEntity(item);
             ReShowItems();
         };
         return pictureBox;
@@ -384,7 +384,7 @@ public class FormDragDropListSimultaneously : Form
         textBox.Leave += (s, e) =>
         {
             item.Explain = textBox.Text;
-            LiteDBSingleton.Instance.insertOrModifySingleEntity(item);
+            Db.Instance.insertOrModifySingleEntity(item);
         };
         explains.Controls.Add(text);
         explains.Controls.Add(textBox);
@@ -399,7 +399,7 @@ public class FormDragDropListSimultaneously : Form
         removeButton.ForeColor = Color.Red;
         removeButton.MouseClick += (s, e) =>
         {
-            LiteDBSingleton.Instance.GetCollection<Single>(Single.TABLE_NAME).Delete(item.Id);
+            Db.Instance.GetCollection<Single>(Single.TABLE_NAME).Delete(item.Id);
             ReShowItems();
         };
         return removeButton;

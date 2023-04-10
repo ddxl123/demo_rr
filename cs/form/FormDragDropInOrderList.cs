@@ -28,9 +28,10 @@ public class FormDragDropListInOrder : Form
         allEventFlowLayoutPanel.FlowDirection = FlowDirection.TopDown;
         allEventFlowLayoutPanel.VerticalScroll.Visible = true;
         allEventFlowLayoutPanel.WrapContents = false;
-        allEventFlowLayoutPanel.BorderStyle = BorderStyle.None;
+        allEventFlowLayoutPanel.BorderStyle = BorderStyle.FixedSingle;
         allEventFlowLayoutPanel.AutoScroll = true;
-        allEventFlowLayoutPanel.Size = new Size(K.GET_DEFAULT_WIDTH(), K.GET_DEFAULT_HEIGHT() * 2 / 3);
+        allEventFlowLayoutPanel.Size = new Size(K.GET_DEFAULT_WIDTH(), K.GET_DEFAULT_HEIGHT() / 2);
+        allEventFlowLayoutPanel.Padding = new Padding() { Left = 10, Top = 10, Bottom = 10 };
 
         // singleEventFlowLayoutPanel.FlowDirection = FlowDirection.TopDown;
         // singleEventFlowLayoutPanel.WrapContents = false;
@@ -63,16 +64,16 @@ public class FormDragDropListInOrder : Form
         addButton.Scale(new SizeF(2, 2));
         addButton.MouseClick += (s, e) =>
         {
-            var maxSingleResult = LiteDBSingleton.Instance.GetCollection<Single>(Single.TABLE_NAME)
-            .Find(LiteDBSingleton.Instance.eventModeQuery(EventMode.InOrder)).OrderByDescending((e) => e.Priority1).FirstOrDefault();
+            var maxSingleResult = Db.Instance.GetCollection<Single>(Single.TABLE_NAME)
+            .Find(Db.Instance.eventModeQuery(EventMode.InOrder)).OrderByDescending((e) => e.Priority1).FirstOrDefault();
 
             if (maxSingleResult == null)
             {
-                LiteDBSingleton.Instance.insertOrModifySingleEntity(new Single(0, 0, null, null, EventMode.InOrder) { Id = null });
+                Db.Instance.insertOrModifySingleEntity(new Single(0, 0, null, null, EventMode.InOrder) { Id = null });
             }
             else
             {
-                LiteDBSingleton.Instance.insertOrModifySingleEntity(new Single(maxSingleResult.Priority1 + 1, 0, null, null, EventMode.InOrder) { Id = null });
+                Db.Instance.insertOrModifySingleEntity(new Single(maxSingleResult.Priority1 + 1, 0, null, null, EventMode.InOrder) { Id = null });
             }
             Level1EventItems();
         };
@@ -83,7 +84,7 @@ public class FormDragDropListInOrder : Form
     private void Level1EventItems()
     {
         // 重新向数据库中获取。
-        var result = LiteDBSingleton.Instance.GetCollection<Single>(Single.TABLE_NAME).Find(LiteDBSingleton.Instance.eventModeQuery(EventMode.InOrder));
+        var result = Db.Instance.GetCollection<Single>(Single.TABLE_NAME).Find(Db.Instance.eventModeQuery(EventMode.InOrder));
         var group = result.GroupBy(e => e.Priority1).OrderByDescending(g => g.Key).ToList();
 
         allEventFlowLayoutPanel.Controls.Clear();
@@ -101,49 +102,68 @@ public class FormDragDropListInOrder : Form
         groupSingleList.ForEach((groupSingle) =>
         {
             var groupEventFlowLayoutPanel = new FlowLayoutPanel();
-
-            // groupEventFlowLayoutPanel.AutoSize = true;
-            groupEventFlowLayoutPanel.WrapContents = false;
-            groupEventFlowLayoutPanel.AutoScroll = true;
-            groupEventFlowLayoutPanel.VerticalScroll.Visible = true;
             groupEventFlowLayoutPanel.FlowDirection = FlowDirection.TopDown;
-            groupEventFlowLayoutPanel.BorderStyle = BorderStyle.None;
-            groupEventFlowLayoutPanel.Width = K.GET_DEFAULT_WIDTH() - 100;
-            groupEventFlowLayoutPanel.Height = 200;
+            groupEventFlowLayoutPanel.AutoSize = true;
+            // groupEventFlowLayoutPanel.WrapContents = false;
+            // groupEventFlowLayoutPanel.AutoScroll = true;
+            // groupEventFlowLayoutPanel.VerticalScroll.Visible = true;
+            groupEventFlowLayoutPanel.BorderStyle = BorderStyle.FixedSingle;
+            // groupEventFlowLayoutPanel.Width = K.GET_DEFAULT_WIDTH() - 100;
+            // groupEventFlowLayoutPanel.Height = 200;
+
 
             var row1FlowLayoutPanel = new FlowLayoutPanel();
             row1FlowLayoutPanel.AutoSize = true;
-            row1FlowLayoutPanel.FlowDirection = FlowDirection.LeftToRight;
+            row1FlowLayoutPanel.FlowDirection = FlowDirection.TopDown;
+
+            var row1_1 = new FlowLayoutPanel() { Parent = row1FlowLayoutPanel };
+            row1_1.AutoSize = true;
+            row1_1.FlowDirection = FlowDirection.LeftToRight;
+            var row1_2 = new FlowLayoutPanel() { Parent = row1FlowLayoutPanel };
+            row1_2.AutoSize = true;
+            row1_2.FlowDirection = FlowDirection.LeftToRight;
+            var row1_3 = new FlowLayoutPanel() { Parent = row1FlowLayoutPanel };
+            row1_3.AutoSize = true;
+            row1_3.FlowDirection = FlowDirection.LeftToRight;
 
             var row2FlowLayoutPanel = new FlowLayoutPanel();
-            row2FlowLayoutPanel.AutoSize = true;
-            row2FlowLayoutPanel.FlowDirection = FlowDirection.LeftToRight;
+            row2FlowLayoutPanel.FlowDirection = FlowDirection.TopDown;
+            row2FlowLayoutPanel.WrapContents = false;
+            row2FlowLayoutPanel.AutoScroll = true;
+            row2FlowLayoutPanel.VerticalScroll.Visible = true;
+            row2FlowLayoutPanel.BorderStyle = BorderStyle.FixedSingle;
+            row2FlowLayoutPanel.Width = K.GET_DEFAULT_WIDTH() - 100;
+            row2FlowLayoutPanel.Height = 200;
 
-            var p = new Label();
-            p.Text = $"顺序：{groupSingle.First().Priority1}";
+            var p = new Label() { Parent = row1_1, AutoSize = true };
+            p.Text = $"循环序号：{groupSingle.First().Priority1}";
 
             var singlesColumnFlowLayoutPanel = new FlowLayoutPanel();
             singlesColumnFlowLayoutPanel.AutoSize = true;
             singlesColumnFlowLayoutPanel.FlowDirection = FlowDirection.TopDown;
-            singlesColumnFlowLayoutPanel.VerticalScroll.Visible = true;
-            singlesColumnFlowLayoutPanel.AutoScroll = true;
-            singlesColumnFlowLayoutPanel.BorderStyle = BorderStyle.FixedSingle;
+            // singlesColumnFlowLayoutPanel.VerticalScroll.Visible = true;
+            // singlesColumnFlowLayoutPanel.AutoScroll = true;
+            // singlesColumnFlowLayoutPanel.BorderStyle = BorderStyle.FixedSingle;
 
-            // 第一行 row
-            var addLoopButton = new Button();
+            // 本次循环将按照截图序号从大到小顺序依次进行检测，重复循环？次后，再等待？秒才继续进入下一个循环序号（若设为0秒，则本次循环结束后，将立即进入下一个循环序号）。
+            var panel1 = new Label() { Parent = row1_2, AutoSize = true, Text = "本次循环将按照截图序号从大到小顺序依次进行检测，重复循环" };
+            var panel2 = new TextBox() { Parent = row1_2, AutoSize = true, Width = 50 };
+            var panel3 = new Label() { Parent = row1_2, AutoSize = true, Text = "次后，再等待" };
+            var panel4 = new TextBox() { Parent = row1_2, AutoSize = true, Width = 50 };
+            var panel5 = new Label() { Parent = row1_2, AutoSize = true, Text = "秒才继续进入下一个循环序号（若设为-1秒，则本次循环结束后，将立即进入下一个循环序号）" };
+
+
+            var addLoopButton = new Button() { Parent = row1_3 };
             addLoopButton.AutoSize = true;
-            addLoopButton.Text = "➕ 添加截图";
+            addLoopButton.Scale(new SizeF(1.5f, 1.5f));
+            addLoopButton.Text = "➕ 增加截图";
             addLoopButton.MouseClick += (s, e) =>
             {
                 var newSingle = new Single(groupSingle.First().Priority1, groupSingle.OrderByDescending(o => o.Priority2).First().Priority2 + 1, null, null, EventMode.InOrder);
-                LiteDBSingleton.Instance.insertOrModifySingleEntity(newSingle);
+                Db.Instance.insertOrModifySingleEntity(newSingle);
                 Level2EventItems(singlesColumnFlowLayoutPanel, groupSingle);
             };
-            var text = new Label() { Text = "循环次数：" };
-            var timesButton = new TextBox();
-
-            // 第二行 row
-            var upButton = new Button();
+            var upButton = new Button() { Parent = row1_1 };
             upButton.Text = "上移";
             upButton.MouseClick += (e, s) =>
             {
@@ -158,16 +178,16 @@ public class FormDragDropListInOrder : Form
                 groupSingleList[lastIndex].ForEach(c =>
                 {
                     c.Priority1 = currentP;
-                    LiteDBSingleton.Instance.insertOrModifySingleEntity(c);
+                    Db.Instance.insertOrModifySingleEntity(c);
                 });
                 groupSingleList[currentIndex].ForEach(c =>
                 {
                     c.Priority1 = lastP;
-                    LiteDBSingleton.Instance.insertOrModifySingleEntity(c);
+                    Db.Instance.insertOrModifySingleEntity(c);
                 });
                 Level1EventItems();
             };
-            var downButton = new Button();
+            var downButton = new Button() { Parent = row1_1 };
             downButton.Text = "下移";
             downButton.MouseClick += (e, s) =>
             {
@@ -183,23 +203,23 @@ public class FormDragDropListInOrder : Form
                 groupSingleList[nextIndex].ForEach(c =>
                 {
                     c.Priority1 = currentP;
-                    LiteDBSingleton.Instance.insertOrModifySingleEntity(c);
+                    Db.Instance.insertOrModifySingleEntity(c);
                 });
                 groupSingleList[currentIndex].ForEach(c =>
                 {
                     c.Priority1 = nextP;
-                    LiteDBSingleton.Instance.insertOrModifySingleEntity(c);
+                    Db.Instance.insertOrModifySingleEntity(c);
                 });
                 Level1EventItems();
             };
-            var removeButton = new Button();
+            var removeButton = new Button() { Parent = row1_1 };
             removeButton.Text = "移除";
             removeButton.ForeColor = Color.Red;
             removeButton.MouseClick += (s, ev) =>
             {
                 groupSingle.ForEach(si =>
                 {
-                    LiteDBSingleton.Instance.GetCollection<Single>(Single.TABLE_NAME).Delete(si.Id);
+                    Db.Instance.GetCollection<Single>(Single.TABLE_NAME).Delete(si.Id);
                 });
                 Level1EventItems();
             };
@@ -207,29 +227,21 @@ public class FormDragDropListInOrder : Form
             // singlesFlowLayoutPanel.Size = new Size(K.GET_DEFAULT_WIDTH(),200);
             Level2EventItems(singlesColumnFlowLayoutPanel, groupSingle);
 
-            row1FlowLayoutPanel.Controls.Add(p);
-            row1FlowLayoutPanel.Controls.Add(addLoopButton);
-            row1FlowLayoutPanel.Controls.Add(text);
-            row1FlowLayoutPanel.Controls.Add(timesButton);
-            row1FlowLayoutPanel.Controls.Add(upButton);
-            row1FlowLayoutPanel.Controls.Add(downButton);
-            row1FlowLayoutPanel.Controls.Add(removeButton);
-
             row2FlowLayoutPanel.Controls.Add(singlesColumnFlowLayoutPanel);
 
             groupEventFlowLayoutPanel.Controls.Add(row1FlowLayoutPanel);
             groupEventFlowLayoutPanel.Controls.Add(row2FlowLayoutPanel);
 
             allEventFlowLayoutPanel.Controls.Add(groupEventFlowLayoutPanel);
-            allEventFlowLayoutPanel.Controls.Add(new Panel() { Height = 20 });
+            allEventFlowLayoutPanel.Controls.Add(new Panel() { Height = 40 });
         });
     }
 
     private void Level2EventItems(FlowLayoutPanel singlesColumnFlowLayoutPanel, List<Single> singles)
     {
 
-        var q = Query.And(LiteDBSingleton.Instance.eventModeQuery(EventMode.InOrder), Query.EQ("Priority1", singles.First().Priority1));
-        var result = LiteDBSingleton.Instance.GetCollection<Single>(Single.TABLE_NAME).Find(q).OrderByDescending(e => e.Priority2).ToList();
+        var q = Query.And(Db.Instance.eventModeQuery(EventMode.InOrder), Query.EQ("Priority1", singles.First().Priority1));
+        var result = Db.Instance.GetCollection<Single>(Single.TABLE_NAME).Find(q).OrderByDescending(e => e.Priority2).ToList();
         singlesColumnFlowLayoutPanel.Controls.Clear();
         singles.Clear();
         singles.AddRange(result);
@@ -237,7 +249,7 @@ public class FormDragDropListInOrder : Form
         singles.ForEach((single) =>
         {
             var subOrderLabel = new Label();
-            subOrderLabel.Text = $"子顺序：{single.Priority2}";
+            subOrderLabel.Text = $"截图序号：{single.Priority2}";
 
             var rowFlowLayoutPanel = new FlowLayoutPanel();
             rowFlowLayoutPanel.AutoSize = true;
@@ -263,8 +275,8 @@ public class FormDragDropListInOrder : Form
                 var lastP = singles[lastIndex].Priority2;
                 singles[currentIndex].Priority2 = lastP;
                 singles[lastIndex].Priority2 = currentP;
-                LiteDBSingleton.Instance.insertOrModifySingleEntity(singles[currentIndex]);
-                LiteDBSingleton.Instance.insertOrModifySingleEntity(singles[lastIndex]);
+                Db.Instance.insertOrModifySingleEntity(singles[currentIndex]);
+                Db.Instance.insertOrModifySingleEntity(singles[lastIndex]);
                 Level2EventItems(singlesColumnFlowLayoutPanel, singles);
             };
             var downButton = new Button();
@@ -281,8 +293,8 @@ public class FormDragDropListInOrder : Form
                 var nextP = singles[nextIndex].Priority2;
                 singles[currentIndex].Priority2 = nextP;
                 singles[nextIndex].Priority2 = currentP;
-                LiteDBSingleton.Instance.insertOrModifySingleEntity(singles[currentIndex]);
-                LiteDBSingleton.Instance.insertOrModifySingleEntity(singles[nextIndex]);
+                Db.Instance.insertOrModifySingleEntity(singles[currentIndex]);
+                Db.Instance.insertOrModifySingleEntity(singles[nextIndex]);
                 Level2EventItems(singlesColumnFlowLayoutPanel, singles);
             };
             var removeButton = new Button();
@@ -290,7 +302,7 @@ public class FormDragDropListInOrder : Form
             removeButton.ForeColor = Color.Red;
             removeButton.MouseClick += (s, e) =>
             {
-                LiteDBSingleton.Instance.GetCollection<Single>(Single.TABLE_NAME).Delete(new BsonValue(single.Id));
+                Db.Instance.GetCollection<Single>(Single.TABLE_NAME).Delete(new BsonValue(single.Id));
                 Level2EventItems(singlesColumnFlowLayoutPanel, singles);
             };
 
@@ -362,7 +374,7 @@ public class FormDragDropListInOrder : Form
             {
                 Global.startingEventMode = EventMode.InOrder;
                 button.Text = "暂停";
-                LiteDBSingleton.Instance.setLoopTime(LiteDBSingleton.Instance.GetValueByKey(K.LOOP_EVENT_TIME_CYCLE_IN_ORDER), EventMode.InOrder);
+                Db.Instance.setLoopTime(Db.Instance.GetValueByKey(Db.LOOP_EVENT_TIME_CYCLE_IN_ORDER), EventMode.InOrder);
                 Global.timer.Start();
                 bodyFlowLayoutPanel.Visible = false;
                 Console.WriteLine("启动成功");
@@ -389,10 +401,20 @@ public class FormDragDropListInOrder : Form
     // 参数
     private Control paramControl(Single item)
     {
-        var paramPanel = new FlowLayoutPanel();
-        paramPanel.FlowDirection = FlowDirection.TopDown;
-        paramPanel.AutoSize = true;
+        var columnFlowLayoutPanel = new FlowLayoutPanel();
+        columnFlowLayoutPanel.FlowDirection = FlowDirection.TopDown;
+        columnFlowLayoutPanel.AutoSize = true;
 
+        var row1FlowLayoutPanel = new FlowLayoutPanel();
+        row1FlowLayoutPanel.FlowDirection = FlowDirection.LeftToRight;
+        row1FlowLayoutPanel.AutoSize = true;
+
+        var row2FlowLayoutPanel = new FlowLayoutPanel();
+        row1FlowLayoutPanel.FlowDirection = FlowDirection.LeftToRight;
+        row1FlowLayoutPanel.AutoSize = true;
+        row2FlowLayoutPanel.Width = K.GET_DEFAULT_WIDTH() * 2 / 3;
+
+        // row1
         var similarityThresholdRowPanel = new FlowLayoutPanel();
         similarityThresholdRowPanel.FlowDirection = FlowDirection.LeftToRight;
         similarityThresholdRowPanel.AutoSize = true;
@@ -416,7 +438,7 @@ public class FormDragDropListInOrder : Form
             }
             similarityThreshold.Text = v.ToString();
             item.SimilarityThreshold = v;
-            LiteDBSingleton.Instance.insertOrModifySingleEntity(item);
+            Db.Instance.insertOrModifySingleEntity(item);
         };
         ToolTip toolTip1 = new ToolTip();
         toolTip1.IsBalloon = true;
@@ -428,73 +450,157 @@ public class FormDragDropListInOrder : Form
 
 
 
-        var positionBlockTypeRowPanel = new FlowLayoutPanel();
-        positionBlockTypeRowPanel.FlowDirection = FlowDirection.LeftToRight;
-        positionBlockTypeRowPanel.AutoSize = true;
-        var positionBlockTypeLabel = new Label();
-        positionBlockTypeLabel.AutoSize = true;
-        positionBlockTypeLabel.Text = "识别区位：";
-        var positionBlockTypeBox = new ComboBox();
-        positionBlockTypeBox.AutoSize = true;
-        positionBlockTypeBox.Width = 300;
-        positionBlockTypeBox.DropDownWidth = 300;
-        positionBlockTypeBox.DropDownStyle = ComboBoxStyle.DropDownList;
-        positionBlockTypeBox.MouseWheel += (s, e) => { ((HandledMouseEventArgs)e).Handled = true; };
+
+
+        row1FlowLayoutPanel.Controls.Add(similarityThresholdRowPanel);
+        row1FlowLayoutPanel.Controls.Add(explainControl(item));
+
+        // 每？秒在屏幕上检测一次与该截图相似度为？的地方，若检测到多处，则取用？作为触发位置。
+        var row1 = new FlowLayoutPanel();
+        row1.AutoSize = true;
+        row1.FlowDirection = FlowDirection.LeftToRight;
+        var row1_1 = new Label() { Text = "每", Parent = row1, AutoSize = true };
+        var row1_2 = new TextBox() { Parent = row1, AutoSize = true, Width = 50 };
+        var row1_3 = new Label() { Text = "秒在屏幕上检测一次与该截图相似度为", Parent = row1, AutoSize = true };
+        var row1_4 = new TextBox() { Parent = row1, AutoSize = true, Width = 50 };
+        var row1_5 = new Label() { Text = "的地方，若检测到多处，则取用", Parent = row1, AutoSize = true };
+        var row1_6 = new ComboBox() { Parent = row1 };
+        row1_6.AutoSize = true;
+        row1_6.Width = 200;
+        row1_6.DropDownWidth = 400;
+        row1_6.DropDownStyle = ComboBoxStyle.DropDownList;
+        row1_6.MouseWheel += (s, e) => { ((HandledMouseEventArgs)e).Handled = true; };
         foreach (var t in Tool.Method.GetEnumMembers<PositionBlockType>())
         {
-            positionBlockTypeBox.Items.Add(Tool.Method.GetEnumDescription(t));
+            row1_6.Items.Add(Tool.Method.GetEnumDescription(t));
         }
-        positionBlockTypeBox.SelectedIndex = Tool.Method.GetEnumIndex<PositionBlockType>(item.PositionBlockType);
-        positionBlockTypeBox.SelectedIndexChanged += (s, e) =>
+        row1_6.SelectedIndex = Tool.Method.GetEnumIndex<PositionBlockType>(item.PositionBlockType);
+        row1_6.SelectedIndexChanged += (s, e) =>
         {
-            item.PositionBlockType = Tool.Method.GetEnumMembers<PositionBlockType>()[positionBlockTypeBox.SelectedIndex];
-            LiteDBSingleton.Instance.insertOrModifySingleEntity(item);
+            item.PositionBlockType = Tool.Method.GetEnumMembers<PositionBlockType>()[row1_6.SelectedIndex];
+            Db.Instance.insertOrModifySingleEntity(item);
         };
+        var row1_7 = new Label() { Text = "作为触发位置。", Parent = row1, AutoSize = true };
 
-        positionBlockTypeRowPanel.Controls.Add(positionBlockTypeLabel);
-        positionBlockTypeRowPanel.Controls.Add(positionBlockTypeBox);
+        // 如果检测成功，则对该区域进行一次？操作，之后继续下一个循环。
+        var row2 = new FlowLayoutPanel();
+        row2.AutoSize = true;
+        row2.FlowDirection = FlowDirection.LeftToRight;
+        var row2_1 = new Label() { Text = "如果检测成功，则对该区域进行一次", Parent = row2, AutoSize = true };
+        var row2_2 = new ComboBox()
+        {
+            Parent = row2,
+            AutoSize = true,
+            Width = 100,
+            DropDownWidth = 200,
+            DropDownStyle = ComboBoxStyle.DropDownList,
+        };
+        row2_2.MouseWheel += (s, e) => { ((HandledMouseEventArgs)e).Handled = true; };
+        foreach (var i in Tool.Method.GetEnumMembers<EventKey>())
+        {
+            row2_2.Items.Add(Tool.Method.GetEnumDescription(i));
+        }
 
-        paramPanel.Controls.Add(similarityThresholdRowPanel);
-        paramPanel.Controls.Add(positionBlockTypeRowPanel);
-        paramPanel.Controls.Add(explainControl(item));
+        // row1_6.SelectedIndexChanged += (s, e) =>
+        // {
+        //     item.PositionBlockType = Tool.Method.GetEnumMembers<PositionBlockType>()[row1_6.SelectedIndex];
+        //     LiteDBSingleton.Instance.insertOrModifySingleEntity(item);
+        // };
 
-        return paramPanel;
+        var row2_3 = new Label() { Text = "操作，之后继续下一个循环。", Parent = row2, AutoSize = true };
+
+        // 如果检测时间累计超过？秒仍然未检测到相似的地方，则跳转到主循环序号为？子循环序号为？的地方进行检测。
+        var row3 = new FlowLayoutPanel();
+        row3.AutoSize = true;
+        row3.FlowDirection = FlowDirection.LeftToRight;
+        var row3_1 = new Label() { Text = "如果检测时间累计超过", Parent = row3, AutoSize = true };
+        var row3_2 = new TextBox() { Parent = row3, AutoSize = true, Width = 50 };
+        var row3_3 = new Label() { Text = "秒仍然未检测到相似的地方，则跳转到 【循环序号为", Parent = row3, AutoSize = true };
+        var row3_4 = new TextBox() { Parent = row3, AutoSize = true, Width = 50 };
+        var row3_5 = new Label() { Text = "，截图序号为", Parent = row3, AutoSize = true };
+        var row3_6 = new TextBox() { Parent = row3, AutoSize = true, Width = 50 };
+        var row3_7 = new Label() { Text = "】 的地方继续进行检测。", Parent = row3, AutoSize = true };
+
+        // // 每多少秒检测1次
+        // public int CheckSecond { get; set; } = 1;
+
+        // // 总检测时间超过多少秒后，将跳转到其他地方检测
+        // // 负数表示无限。
+        // public int Timeout { get; set; } = -1;
+
+        // // 跳转到哪里
+        // // 为 null 表示哪也不跳转（停止）
+        // public ObjectId? toWhere { get; set; }
+
+        columnFlowLayoutPanel.Controls.Add(row1);
+        columnFlowLayoutPanel.Controls.Add(row2);
+        columnFlowLayoutPanel.Controls.Add(row3);
+        // columnFlowLayoutPanel.Controls.Add(row2FlowLayoutPanel);
+
+        return columnFlowLayoutPanel;
     }
 
 
     private Control mainExplainControl()
     {
-        var addEventPanel = new FlowLayoutPanel();
-        addEventPanel.FlowDirection = FlowDirection.TopDown;
-        addEventPanel.AutoSize = true;
-        var text = new Label();
-        text.AutoSize = true;
-        text.Text = "会按照顺序依次进行点击操作";
-
-        var loopTimePanel = new FlowLayoutPanel();
-        loopTimePanel.FlowDirection = FlowDirection.LeftToRight;
-        loopTimePanel.AutoSize = true;
-        var timeLabel1 = new Label();
-        timeLabel1.Text = "每";
-        timeLabel1.AutoSize = true;
-        var timeLabel2 = new Label();
-        timeLabel2.Text = "秒触发一次循环事件";
-        timeLabel2.AutoSize = true;
-        var timeBox = new TextBox();
-
-        timeBox.Text = LiteDBSingleton.Instance.GetValueByKey(K.LOOP_EVENT_TIME_CYCLE_IN_ORDER);
-        LiteDBSingleton.Instance.setLoopTime(LiteDBSingleton.Instance.GetValueByKey(K.LOOP_EVENT_TIME_CYCLE_IN_ORDER), EventMode.InOrder);
-        timeBox.Leave += (s, e) =>
+        var column = new FlowLayoutPanel()
         {
-            timeBox.Text = LiteDBSingleton.Instance.setLoopTime(timeBox.Text, EventMode.InOrder).ToString();
+            AutoSize = true,
+            FlowDirection = FlowDirection.TopDown,
         };
-        loopTimePanel.Controls.Add(timeLabel1);
-        loopTimePanel.Controls.Add(timeBox);
-        loopTimePanel.Controls.Add(timeLabel2);
 
-        addEventPanel.Controls.Add(text);
-        addEventPanel.Controls.Add(loopTimePanel);
-        return addEventPanel;
+        var row1 = new FlowLayoutPanel()
+        {
+            Parent = column,
+            AutoSize = true,
+            FlowDirection = FlowDirection.LeftToRight,
+        };
+        var row2 = new FlowLayoutPanel()
+        {
+            Parent = column,
+            AutoSize = true,
+            FlowDirection = FlowDirection.LeftToRight,
+        };
+        // 【顺序检测模式】启动后，将按照【循环序号】从大到小的顺序依次执行，每个循环都会按照其【截图序号】从大到小的顺序进行检测。
+        // 以下全部循环结束后，等待？秒后，会再次重复以下全部循环，将重复以下全部循环？次。
+        var text1 = new Label() { Parent = row1, AutoSize = true, Text = "【顺序检测模式】启动后，将按照【循环序号】从大到小的顺序依次执行，每个循环都会按照其【截图序号】从大到小的顺序进行检测。" };
+        var text2 = new Label() { Parent = row2, AutoSize = true, Text = "以下全部循环结束后，等待" };
+        var text3 = new TextBox() { Parent = row2, AutoSize = true, Width = 50 };
+        var text4 = new Label() { Parent = row2, AutoSize = true, Text = "秒后，会再次重复以下全部循环，将重复以下全部循环" };
+        var text5 = new TextBox() { Parent = row2, AutoSize = true, Width = 50 };
+        var text6 = new Label() { Parent = row2, AutoSize = true, Text = "次。" };
+
+        // var addEventPanel = new FlowLayoutPanel();
+        // addEventPanel.FlowDirection = FlowDirection.TopDown;
+        // addEventPanel.AutoSize = true;
+        // var text = new Label();
+        // text.AutoSize = true;
+        // text.Text = "会按照顺序依次进行点击操作";
+
+        // var loopTimePanel = new FlowLayoutPanel();
+        // loopTimePanel.FlowDirection = FlowDirection.LeftToRight;
+        // loopTimePanel.AutoSize = true;
+        // var timeLabel1 = new Label();
+        // timeLabel1.Text = "每";
+        // timeLabel1.AutoSize = true;
+        // var timeLabel2 = new Label();
+        // timeLabel2.Text = "秒触发一次循环事件";
+        // timeLabel2.AutoSize = true;
+        // var timeBox = new TextBox();
+
+        // timeBox.Text = Db.Instance.GetValueByKey(Db.LOOP_EVENT_TIME_CYCLE_IN_ORDER);
+        // Db.Instance.setLoopTime(Db.Instance.GetValueByKey(Db.LOOP_EVENT_TIME_CYCLE_IN_ORDER), EventMode.InOrder);
+        // timeBox.Leave += (s, e) =>
+        // {
+        //     timeBox.Text = Db.Instance.setLoopTime(timeBox.Text, EventMode.InOrder).ToString();
+        // };
+        // loopTimePanel.Controls.Add(timeLabel1);
+        // loopTimePanel.Controls.Add(timeBox);
+        // loopTimePanel.Controls.Add(timeLabel2);
+
+        // addEventPanel.Controls.Add(text);
+        // addEventPanel.Controls.Add(loopTimePanel);
+        return column;
     }
 
     // 优先级
@@ -610,7 +716,7 @@ public class FormDragDropListInOrder : Form
                 item.Visible = true;
             }
 
-            LiteDBSingleton.Instance.insertOrModifySingleEntity(item);
+            Db.Instance.insertOrModifySingleEntity(item);
             pictureBox.Image = Image.FromFile(item.ImagePath);
         };
         return pictureBox;
@@ -631,7 +737,7 @@ public class FormDragDropListInOrder : Form
         textBox.Leave += (s, e) =>
         {
             item.Explain = textBox.Text;
-            LiteDBSingleton.Instance.insertOrModifySingleEntity(item);
+            Db.Instance.insertOrModifySingleEntity(item);
         };
         explains.Controls.Add(text);
         explains.Controls.Add(textBox);
@@ -646,7 +752,7 @@ public class FormDragDropListInOrder : Form
         removeButton.ForeColor = Color.Red;
         removeButton.MouseClick += (s, e) =>
         {
-            LiteDBSingleton.Instance.GetCollection<Single>(Single.TABLE_NAME).Delete(item.Id);
+            Db.Instance.GetCollection<Single>(Single.TABLE_NAME).Delete(item.Id);
             // ReShowItems();
         };
         return removeButton;

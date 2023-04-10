@@ -48,7 +48,7 @@ public static class Global
             string[] files = Directory.GetFiles(folderPath);
             foreach (string file in files)
             {
-                var result = LiteDBSingleton.Instance.GetCollection<Single>(Single.TABLE_NAME).FindAll();
+                var result = Db.Instance.GetCollection<Single>(Single.TABLE_NAME).FindAll();
                 if (!result.Select((e) => { return e.ImagePath; }).Contains(Path.GetFileName(file)))
                 {
                     try

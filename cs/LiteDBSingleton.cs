@@ -22,17 +22,20 @@ public class KeyValue
         return $"({Key}:{Value})";
     }
 }
-public sealed class LiteDBSingleton
+public sealed class Db
 {
-    private static readonly LiteDBSingleton instance = new LiteDBSingleton();
+    private static readonly Db instance = new Db();
     private readonly LiteDatabase db;
 
-    private LiteDBSingleton()
+    public static string LOOP_EVENT_TIME_CYCLE_SIMULTANEOUSLY = "loop_event_time_cycle_simultaneously";
+    public static string LOOP_EVENT_TIME_CYCLE_IN_ORDER = "loop_event_time_cycle_in_order";
+
+    private Db()
     {
         db = new LiteDatabase("db.db");
     }
 
-    public static LiteDBSingleton Instance
+    public static Db Instance
     {
         get
         {
@@ -47,14 +50,14 @@ public sealed class LiteDBSingleton
 
     public string? GetValueByKey(string key)
     {
-        var c = LiteDBSingleton.instance.GetCollection<KeyValue>(KeyValue.TABLE_NAME);
+        var c = Db.instance.GetCollection<KeyValue>(KeyValue.TABLE_NAME);
         var q = Query.EQ("Key", new BsonValue(key));
         return c.FindOne(q)?.Value;
     }
 
     public void SetKey(string key, string value)
     {
-        var c = LiteDBSingleton.instance.GetCollection<KeyValue>(KeyValue.TABLE_NAME);
+        var c = Db.instance.GetCollection<KeyValue>(KeyValue.TABLE_NAME);
         var q = Query.EQ("Key", new BsonValue(key));
         var result = c.FindOne(q);
         if (result == null)
@@ -71,7 +74,7 @@ public sealed class LiteDBSingleton
 
     public void RemoveKey(string key)
     {
-        var c = LiteDBSingleton.instance.GetCollection<KeyValue>(KeyValue.TABLE_NAME);
+        var c = Db.instance.GetCollection<KeyValue>(KeyValue.TABLE_NAME);
         var q = Query.EQ("Key", new BsonValue(key));
         c.Delete(c.FindOne(q).Id);
     }
@@ -103,11 +106,11 @@ public sealed class LiteDBSingleton
 
         if (eventMode == EventMode.Simultaneously)
         {
-            SetKey(K.LOOP_EVENT_TIME_CYCLE_SIMULTANEOUSLY, findSecond.ToString());
+            SetKey(LOOP_EVENT_TIME_CYCLE_SIMULTANEOUSLY, findSecond.ToString());
         }
         else if (eventMode == EventMode.InOrder)
         {
-            SetKey(K.LOOP_EVENT_TIME_CYCLE_IN_ORDER, findSecond.ToString());
+            SetKey(LOOP_EVENT_TIME_CYCLE_IN_ORDER, findSecond.ToString());
         }
         else
         {

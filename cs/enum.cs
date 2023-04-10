@@ -3,21 +3,21 @@ using System.ComponentModel;
 
 public enum PositionBlockType
 {
-    [Description("截选图左侧靠在屏幕最左边的")]
+    [Description("截图左侧靠在屏幕最左边的")]
     left,
-    [Description("截选图顶部靠在屏幕最顶端的")]
+    [Description("截图顶部靠在屏幕最顶端的")]
     top,
-    [Description("截选图右侧靠在屏幕最右边的")]
+    [Description("截图右侧靠在屏幕最右边的")]
     right,
-    [Description("截选图底部靠在屏幕最底端的")]
+    [Description("截图底部靠在屏幕最底端的")]
     down,
-    [Description("截选图左上角靠在屏幕最左上方的")]
+    [Description("截图左上角靠在屏幕最左上方的")]
     left_top,
-    [Description("截选图左下角靠在屏幕最左下方的")]
+    [Description("截图左下角靠在屏幕最左下方的")]
     left_down,
-    [Description("截选图右上角靠在屏幕最右上方的")]
+    [Description("截图右上角靠在屏幕最右上方的")]
     right_top,
-    [Description("截选图右下角靠在屏幕最右下方的")]
+    [Description("截图右下角靠在屏幕最右下方的")]
     right_down,
 
 }
@@ -33,3 +33,15 @@ public enum EventMode
     InOrder,
 }
 
+
+public enum EventKey
+{
+    [Description("单击鼠标左键")]
+    mouseLeftClick,
+    [Description("单击鼠标右键")]
+    mouseRightClick,
+    [Description("双击鼠标左键")]
+    mouseLeftDoubleClick,
+    [Description("双击鼠标右键")]
+    mouseRightDoubleClick,
+}

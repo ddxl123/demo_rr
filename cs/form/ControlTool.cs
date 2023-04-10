@@ -6,7 +6,7 @@ public class ControlTool
     public static Control separator()
     {
         Panel separator = new Panel();
-        separator.Width = K.GET_DEFAULT_WIDTH();
+        separator.Dock = DockStyle.Fill;
         separator.Height = 2;
         separator.BackColor = Color.FromArgb(50, Color.Gray);
         return separator;
