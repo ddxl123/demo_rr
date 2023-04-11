@@ -38,10 +38,25 @@ public enum EventKey
 {
     [Description("单击鼠标左键")]
     mouseLeftClick,
-    [Description("单击鼠标右键")]
-    mouseRightClick,
+
+    [Description("长按鼠标左键")]
+    mouseLeftLongClick,
+
     [Description("双击鼠标左键")]
     mouseLeftDoubleClick,
-    [Description("双击鼠标右键")]
-    mouseRightDoubleClick,
+
+    [Description("单击鼠标右键")]
+    mouseRightClick,
+
+}
+
+
+public enum Priority1LoopStatus
+{
+    // 当前循环序号成功循环完成一次。
+    complete,
+    // 当前循环序号循环超时。
+    timeout,
+    // 当前循环序号跳转到其他地方了。
+    jump,
 }

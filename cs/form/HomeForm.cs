@@ -34,8 +34,10 @@ public class HomeForm : Form
 
         tabPage1.Controls.Add(Global.formDragDropListSimultaneously);
         tabPage2.Controls.Add(Global.formDragDropListInOrder);
+        tabPage2.Dock = DockStyle.Fill;
         tabControl.TabPages.Add(tabPage1);
         tabControl.TabPages.Add(tabPage2);
+        tabControl.Dock = DockStyle.Fill;
 
         this.Controls.Add(tabControl);
     }

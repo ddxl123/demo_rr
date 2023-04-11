@@ -51,11 +51,84 @@ public class FormDragDropListInOrder : Form
         bodyFlowLayoutPanel.Controls.Add(allEventFlowLayoutPanel);
         // bodyFlowLayoutPanel.Controls.Add(singleEventFlowLayoutPanel);
 
-        mainFlowLayoutPanel.Controls.Add(startOrCancelControl());
+        // mainFlowLayoutPanel.Controls.Add(startOrCancelControl());
         mainFlowLayoutPanel.Controls.Add(bodyFlowLayoutPanel);
         this.Controls.Add(mainFlowLayoutPanel);
     }
 
+
+
+    private Control mainExplainControl()
+    {
+        var column = new FlowLayoutPanel()
+        {
+            AutoSize = true,
+            FlowDirection = FlowDirection.TopDown,
+        };
+
+        var row1 = new FlowLayoutPanel()
+        {
+            Parent = column,
+            AutoSize = true,
+            FlowDirection = FlowDirection.LeftToRight,
+        };
+        var row2 = new FlowLayoutPanel()
+        {
+            Parent = column,
+            AutoSize = true,
+            FlowDirection = FlowDirection.LeftToRight,
+        };
+        // 【顺序检测模式】启动后，将按照【循环序号】从大到小的顺序依次执行，每个循环都会按照其【截图序号】从大到小的顺序进行检测。
+        // 以下全部循环结束后，等待？秒后，会再次重复以下全部循环，将重复以下全部循环？次。
+        var text1 = new Label() { Parent = row1, AutoSize = true, Text = "【顺序检测模式】启动后，将按照【循环序号】从大到小的顺序依次执行，每个循环都会按照其【截图序号】从大到小的顺序进行检测。" };
+        var text2 = new Label() { Parent = row2, AutoSize = true, Text = "以下全部循环结束后，等待" };
+        var text3 = new TextBox() { Parent = row2, AutoSize = true, Width = 50 };
+        text3.Text = Db.Instance.GetSth<int>(Db.IN_ORDER_LOOP_EVENT_WAIT_SECOND, -1);
+        text3.LostFocus += (s, e) =>
+        {
+            text3.Text = Db.Instance.SetSth<int>(Db.IN_ORDER_LOOP_EVENT_WAIT_SECOND, text3.Text, -1);
+        };
+        var text4 = new Label() { Parent = row2, AutoSize = true, Text = "秒后，会再次重复以下全部循环，将重复以下全部循环" };
+        var text5 = new TextBox() { Parent = row2, AutoSize = true, Width = 50 };
+        text5.Text = Db.Instance.GetSth<int>(Db.IN_ORDER_LOOP_EVENT_TIMES, 1);
+        text5.LostFocus += (s, e) =>
+        {
+            text5.Text = Db.Instance.SetSth<int>(Db.IN_ORDER_LOOP_EVENT_TIMES, text5.Text, 1);
+        };
+        var text6 = new Label() { Parent = row2, AutoSize = true, Text = "次（每次完成一次都会减1）。" };
+
+        // var addEventPanel = new FlowLayoutPanel();
+        // addEventPanel.FlowDirection = FlowDirection.TopDown;
+        // addEventPanel.AutoSize = true;
+        // var text = new Label();
+        // text.AutoSize = true;
+        // text.Text = "会按照顺序依次进行点击操作";
+
+        // var loopTimePanel = new FlowLayoutPanel();
+        // loopTimePanel.FlowDirection = FlowDirection.LeftToRight;
+        // loopTimePanel.AutoSize = true;
+        // var timeLabel1 = new Label();
+        // timeLabel1.Text = "每";
+        // timeLabel1.AutoSize = true;
+        // var timeLabel2 = new Label();
+        // timeLabel2.Text = "秒触发一次循环事件";
+        // timeLabel2.AutoSize = true;
+        // var timeBox = new TextBox();
+
+        // timeBox.Text = Db.Instance.GetValueByKey(Db.LOOP_EVENT_TIME_CYCLE_IN_ORDER);
+        // Db.Instance.setLoopTime(Db.Instance.GetValueByKey(Db.LOOP_EVENT_TIME_CYCLE_IN_ORDER), EventMode.InOrder);
+        // timeBox.Leave += (s, e) =>
+        // {
+        //     timeBox.Text = Db.Instance.setLoopTime(timeBox.Text, EventMode.InOrder).ToString();
+        // };
+        // loopTimePanel.Controls.Add(timeLabel1);
+        // loopTimePanel.Controls.Add(timeBox);
+        // loopTimePanel.Controls.Add(timeLabel2);
+
+        // addEventPanel.Controls.Add(text);
+        // addEventPanel.Controls.Add(loopTimePanel);
+        return column;
+    }
 
     private Control addLoopEventButtonControl()
     {
@@ -64,16 +137,45 @@ public class FormDragDropListInOrder : Form
         addButton.Scale(new SizeF(2, 2));
         addButton.MouseClick += (s, e) =>
         {
-            var maxSingleResult = Db.Instance.GetCollection<Single>(Single.TABLE_NAME)
+            Single? maxSingleResult = Db.Instance.GetCollection<Single>(Single.TABLE_NAME)
             .Find(Db.Instance.eventModeQuery(EventMode.InOrder)).OrderByDescending((e) => e.Priority1).FirstOrDefault();
 
             if (maxSingleResult == null)
             {
-                Db.Instance.insertOrModifySingleEntity(new Single(0, 0, null, null, EventMode.InOrder) { Id = null });
+
+                Db.Instance.insertOrModifySingleEntity(new Single(
+                        imagePath: null,
+                        explain: null,
+                        similarityThreshold: 0.7,
+                        positionBlockType: PositionBlockType.left_top,
+                        eventMode: EventMode.InOrder,
+                        eventKey: EventKey.mouseLeftClick,
+                        priority1: 0,
+                        priority1LoopTimes: 1,
+                        priority2ToNextAfterSecond: null,
+                        priority2: 0,
+                        priority2CheckSecond: null,
+                        priority2TimeoutSecond: null,
+                        priority2toWhere: null
+                    ));
             }
             else
             {
-                Db.Instance.insertOrModifySingleEntity(new Single(maxSingleResult.Priority1 + 1, 0, null, null, EventMode.InOrder) { Id = null });
+                Db.Instance.insertOrModifySingleEntity(new Single(
+                        imagePath: null,
+                        explain: null,
+                        similarityThreshold: 0.7,
+                        positionBlockType: PositionBlockType.left_top,
+                        eventMode: EventMode.InOrder,
+                        eventKey: EventKey.mouseLeftClick,
+                        priority1: (maxSingleResult?.Priority1 ?? -1) + 1,
+                        priority1LoopTimes: 1,
+                        priority2ToNextAfterSecond: null,
+                        priority2: 0,
+                        priority2CheckSecond: null,
+                        priority2TimeoutSecond: null,
+                        priority2toWhere: null
+                    ));
             }
             Level1EventItems();
         };
@@ -146,12 +248,48 @@ public class FormDragDropListInOrder : Form
             // singlesColumnFlowLayoutPanel.BorderStyle = BorderStyle.FixedSingle;
 
             // 本次循环将按照截图序号从大到小顺序依次进行检测，重复循环？次后，再等待？秒才继续进入下一个循环序号（若设为0秒，则本次循环结束后，将立即进入下一个循环序号）。
-            var panel1 = new Label() { Parent = row1_2, AutoSize = true, Text = "本次循环将按照截图序号从大到小顺序依次进行检测，重复循环" };
+            var panel1 = new Label() { Parent = row1_2, AutoSize = true, Text = "本次循环将按照【截图序号】从大到小顺序依次进行检测，重复循环" };
             var panel2 = new TextBox() { Parent = row1_2, AutoSize = true, Width = 50 };
+            panel2.Text = Db.Instance.GetSingleSth<int>(
+                single: groupSingle.First(),
+                oldValueRead: (oS) => oS.Priority1LoopTimes,
+                newValueRead: (nS) => nS?.Priority1LoopTimes,
+                newValueToOldValue: (oS, n) => { oS.Priority1LoopTimes = n; },
+                min: 1,
+                max: null
+                );
+            panel2.LostFocus += (s, e) =>
+            {
+                groupSingle.ForEach(single =>
+                {
+                    panel2.Text = Db.Instance.SetSingleSth<int>(single, oS => oS.Priority1LoopTimes, panel2.Text, (oS, n) => oS.Priority1LoopTimes = n, 1, null);
+                });
+            };
             var panel3 = new Label() { Parent = row1_2, AutoSize = true, Text = "次后，再等待" };
             var panel4 = new TextBox() { Parent = row1_2, AutoSize = true, Width = 50 };
-            var panel5 = new Label() { Parent = row1_2, AutoSize = true, Text = "秒才继续进入下一个循环序号（若设为-1秒，则本次循环结束后，将立即进入下一个循环序号）" };
-
+            panel4.Text = Db.Instance.GetSingleSth<int>(
+                single: groupSingle.First(),
+                oldValueRead: (oS) => oS.Priority2ToNextAfterSecond,
+                newValueRead: (nS) => nS?.Priority2ToNextAfterSecond,
+                newValueToOldValue: (oS, n) => { oS.Priority2ToNextAfterSecond = n; },
+                min: 0,
+                max: null
+            );
+            panel4.LostFocus += (s, e) =>
+            {
+                groupSingle.ForEach(single =>
+                {
+                    panel4.Text = Db.Instance.SetSingleSth<int>(
+                        single,
+                        oS => oS.Priority2ToNextAfterSecond,
+                        panel4.Text,
+                        (oS, n) => oS.Priority2ToNextAfterSecond = n,
+                        0,
+                        null
+                        );
+                });
+            };
+            var panel5 = new Label() { Parent = row1_2, AutoSize = true, Text = "秒才继续进入下一个循环序号（若设为0秒，则本次循环结束后，将立即进入下一个循环序号）" };
 
             var addLoopButton = new Button() { Parent = row1_3 };
             addLoopButton.AutoSize = true;
@@ -159,7 +297,21 @@ public class FormDragDropListInOrder : Form
             addLoopButton.Text = "➕ 增加截图";
             addLoopButton.MouseClick += (s, e) =>
             {
-                var newSingle = new Single(groupSingle.First().Priority1, groupSingle.OrderByDescending(o => o.Priority2).First().Priority2 + 1, null, null, EventMode.InOrder);
+                var newSingle = new Single(
+                        imagePath: null,
+                        explain: null,
+                        similarityThreshold: 0.7,
+                        positionBlockType: PositionBlockType.left_top,
+                        eventMode: EventMode.InOrder,
+                        eventKey: EventKey.mouseLeftClick,
+                        priority1: groupSingle.First().Priority1,
+                        priority1LoopTimes: 1,
+                        priority2ToNextAfterSecond: null,
+                        priority2: groupSingle.OrderByDescending(o => o.Priority2).First().Priority2! + 1,
+                        priority2CheckSecond: null,
+                        priority2TimeoutSecond: null,
+                        priority2toWhere: null
+                    );
                 Db.Instance.insertOrModifySingleEntity(newSingle);
                 Level2EventItems(singlesColumnFlowLayoutPanel, groupSingle);
             };
@@ -348,55 +500,55 @@ public class FormDragDropListInOrder : Form
     //     }
     // }
 
-    private Control startOrCancelControl()
-    {
-        Button button = Global.buttonInOrder;
+    // private Control startOrCancelControl()
+    // {
+    //     Button button = Global.buttonInOrder;
 
-        if (Global.startingEventMode == EventMode.InOrder)
-        {
-            button.Text = "暂停";
-        }
-        else
-        {
-            button.Text = "启动";
-        }
-        button.Click += (s, e) =>
-        {
-            if (Global.startingEventMode == EventMode.InOrder)
-            {
-                Global.startingEventMode = EventMode.None;
-                button.Text = "启动";
-                Global.timer.Stop();
-                bodyFlowLayoutPanel.Visible = true;
-                Console.WriteLine("暂停成功");
-            }
-            else
-            {
-                Global.startingEventMode = EventMode.InOrder;
-                button.Text = "暂停";
-                Db.Instance.setLoopTime(Db.Instance.GetValueByKey(Db.LOOP_EVENT_TIME_CYCLE_IN_ORDER), EventMode.InOrder);
-                Global.timer.Start();
-                bodyFlowLayoutPanel.Visible = false;
-                Console.WriteLine("启动成功");
+    //     if (Global.startingEventMode == EventMode.InOrder)
+    //     {
+    //         button.Text = "暂停";
+    //     }
+    //     else
+    //     {
+    //         button.Text = "启动";
+    //     }
+    //     button.Click += (s, e) =>
+    //     {
+    //         if (Global.startingEventMode == EventMode.InOrder)
+    //         {
+    //             Global.startingEventMode = EventMode.None;
+    //             button.Text = "启动";
+    //             Global.simultaneouslyTimer.Stop();
+    //             bodyFlowLayoutPanel.Visible = true;
+    //             Console.WriteLine("暂停成功");
+    //         }
+    //         else
+    //         {
+    //             Global.startingEventMode = EventMode.InOrder;
+    //             button.Text = "暂停";
+    //             Db.Instance.setLoopTime(Db.Instance.GetValueByKey(Db.LOOP_EVENT_TIME_CYCLE_IN_ORDER), EventMode.InOrder);
+    //             Global.simultaneouslyTimer.Start();
+    //             bodyFlowLayoutPanel.Visible = false;
+    //             Console.WriteLine("启动成功");
 
-                if (button == Global.buttonSimultaneously)
-                {
-                    Global.buttonInOrder.Text = "启动";
-                    Global.bodyFlowLayoutPanelSimultaneously.Visible = true;
-                }
-                else if (button == Global.buttonInOrder)
-                {
-                    Global.buttonSimultaneously.Text = "启动";
-                    Global.bodyFlowLayoutPanelInOrder.Visible = true;
-                }
-                else
-                {
-                    throw new Exception($"未处理 {button}");
-                }
-            }
-        };
-        return button;
-    }
+    //             if (button == Global.buttonSimultaneously)
+    //             {
+    //                 Global.buttonInOrder.Text = "启动";
+    //                 Global.bodyFlowLayoutPanelSimultaneously.Visible = true;
+    //             }
+    //             else if (button == Global.buttonInOrder)
+    //             {
+    //                 Global.buttonSimultaneously.Text = "启动";
+    //                 Global.bodyFlowLayoutPanelInOrder.Visible = true;
+    //             }
+    //             else
+    //             {
+    //                 throw new Exception($"未处理 {button}");
+    //             }
+    //         }
+    //     };
+    //     return button;
+    // }
 
     // 参数
     private Control paramControl(Single item)
@@ -461,8 +613,47 @@ public class FormDragDropListInOrder : Form
         row1.FlowDirection = FlowDirection.LeftToRight;
         var row1_1 = new Label() { Text = "每", Parent = row1, AutoSize = true };
         var row1_2 = new TextBox() { Parent = row1, AutoSize = true, Width = 50 };
+        row1_2.Text = Db.Instance.GetSingleSth<int>(
+            single: item,
+            oldValueRead: oS => oS.Priority2CheckSecond,
+            newValueRead: nS => nS?.Priority2CheckSecond,
+            newValueToOldValue: (oS, n) => oS.Priority2CheckSecond = n,
+            min: 1,
+            max: null
+        );
+        row1_2.LostFocus += (s, e) =>
+        {
+            row1_2.Text = Db.Instance.SetSingleSth<int>(
+                single: item,
+                oldValueRead: oS => oS.Priority2CheckSecond,
+                newValue: row1_2.Text,
+                newValueToOldValue: (oS, n) => oS.Priority2CheckSecond = n,
+                1,
+            max: null
+            );
+        };
         var row1_3 = new Label() { Text = "秒在屏幕上检测一次与该截图相似度为", Parent = row1, AutoSize = true };
         var row1_4 = new TextBox() { Parent = row1, AutoSize = true, Width = 50 };
+        row1_4.Text = Db.Instance.GetSingleSth<double>(
+            single: item,
+            oldValueRead: oS => oS.SimilarityThreshold,
+            newValueRead: nS => nS?.SimilarityThreshold,
+            newValueToOldValue: (oS, n) => oS.SimilarityThreshold = n,
+            min: 0,
+            max: 1
+        );
+        row1_4.LostFocus += (s, e) =>
+        {
+            row1_4.Text = Db.Instance.SetSingleSth<double>(
+                single: item,
+                oldValueRead: oS => oS.SimilarityThreshold,
+                newValue: row1_4.Text,
+                newValueToOldValue: (oS, n) => oS.SimilarityThreshold = n,
+                0,
+                max: 1
+            );
+        };
+
         var row1_5 = new Label() { Text = "的地方，若检测到多处，则取用", Parent = row1, AutoSize = true };
         var row1_6 = new ComboBox() { Parent = row1 };
         row1_6.AutoSize = true;
@@ -470,15 +661,28 @@ public class FormDragDropListInOrder : Form
         row1_6.DropDownWidth = 400;
         row1_6.DropDownStyle = ComboBoxStyle.DropDownList;
         row1_6.MouseWheel += (s, e) => { ((HandledMouseEventArgs)e).Handled = true; };
-        foreach (var t in Tool.Method.GetEnumMembers<PositionBlockType>())
+        foreach (var t in Enum.GetValues(typeof(PositionBlockType)))
         {
-            row1_6.Items.Add(Tool.Method.GetEnumDescription(t));
+            row1_6.Items.Add(Tool.Method.GetEnumDescription((PositionBlockType)t));
         }
-        row1_6.SelectedIndex = Tool.Method.GetEnumIndex<PositionBlockType>(item.PositionBlockType);
+        row1_6.SelectedIndex = int.Parse(Db.Instance.GetSingleSth<int>(
+            single: item,
+            oldValueRead: oS => (int?)oS.PositionBlockType,
+            newValueRead: nS => (int?)nS?.PositionBlockType,
+            newValueToOldValue: (oS, n) => oS.PositionBlockType = (PositionBlockType)n,
+            min: 0,
+            max: Enum.GetNames(typeof(PositionBlockType)).Length
+            ));
         row1_6.SelectedIndexChanged += (s, e) =>
         {
-            item.PositionBlockType = Tool.Method.GetEnumMembers<PositionBlockType>()[row1_6.SelectedIndex];
-            Db.Instance.insertOrModifySingleEntity(item);
+            item.PositionBlockType = (PositionBlockType)int.Parse(Db.Instance.SetSingleSth<int>(
+                single: item,
+                oldValueRead: oS => (int?)oS.PositionBlockType,
+                newValue: row1_6.SelectedIndex.ToString(),
+                newValueToOldValue: (oS, n) => oS.PositionBlockType = (PositionBlockType)n,
+                min: 0,
+                max: Enum.GetNames(typeof(PositionBlockType)).Length
+            ));
         };
         var row1_7 = new Label() { Text = "作为触发位置。", Parent = row1, AutoSize = true };
 
@@ -496,16 +700,30 @@ public class FormDragDropListInOrder : Form
             DropDownStyle = ComboBoxStyle.DropDownList,
         };
         row2_2.MouseWheel += (s, e) => { ((HandledMouseEventArgs)e).Handled = true; };
-        foreach (var i in Tool.Method.GetEnumMembers<EventKey>())
+        foreach (var i in Enum.GetValues(typeof(EventKey)))
         {
-            row2_2.Items.Add(Tool.Method.GetEnumDescription(i));
+            row2_2.Items.Add(Tool.Method.GetEnumDescription((EventKey)i));
         }
+        row2_2.SelectedIndex = int.Parse(Db.Instance.GetSingleSth<int>(
+            single: item,
+            oldValueRead: oS => (int?)oS.EventKey,
+            newValueRead: nS => (int?)nS?.EventKey,
+            newValueToOldValue: (oS, n) => oS.EventKey = (EventKey)n,
+            min: 0,
+            max: Enum.GetNames(typeof(EventKey)).Length
+            ));
+        row2_2.SelectedIndexChanged += (s, e) =>
+        {
+            item.EventKey = (EventKey)int.Parse(Db.Instance.SetSingleSth<int>(
+                single: item,
+                oldValueRead: oS => (int?)oS.EventKey,
+                newValue: row2_2.SelectedIndex.ToString(),
+                newValueToOldValue: (oS, n) => oS.EventKey = (EventKey)n,
+                min: 0,
+                max: Enum.GetNames(typeof(EventKey)).Length
+            ));
+        };
 
-        // row1_6.SelectedIndexChanged += (s, e) =>
-        // {
-        //     item.PositionBlockType = Tool.Method.GetEnumMembers<PositionBlockType>()[row1_6.SelectedIndex];
-        //     LiteDBSingleton.Instance.insertOrModifySingleEntity(item);
-        // };
 
         var row2_3 = new Label() { Text = "操作，之后继续下一个循环。", Parent = row2, AutoSize = true };
 
@@ -515,22 +733,92 @@ public class FormDragDropListInOrder : Form
         row3.FlowDirection = FlowDirection.LeftToRight;
         var row3_1 = new Label() { Text = "如果检测时间累计超过", Parent = row3, AutoSize = true };
         var row3_2 = new TextBox() { Parent = row3, AutoSize = true, Width = 50 };
+        row3_2.Text = Db.Instance.GetSingleSth<int>(
+            single: item,
+            oldValueRead: oS => oS.Priority2TimeoutSecond,
+            newValueRead: nS => nS?.Priority2TimeoutSecond,
+            newValueToOldValue: (oS, n) => oS.Priority2TimeoutSecond = n,
+            min: 0,
+            max: null
+        );
+        row3_2.LostFocus += (s, e) =>
+        {
+            row3_2.Text = Db.Instance.SetSingleSth<int>(
+                single: item,
+                oldValueRead: oS => oS.Priority2TimeoutSecond,
+                newValue: row3_2.Text,
+                newValueToOldValue: (oS, n) => oS.Priority2TimeoutSecond = n,
+                min: 0,
+                max: null
+            );
+        };
         var row3_3 = new Label() { Text = "秒仍然未检测到相似的地方，则跳转到 【循环序号为", Parent = row3, AutoSize = true };
         var row3_4 = new TextBox() { Parent = row3, AutoSize = true, Width = 50 };
         var row3_5 = new Label() { Text = "，截图序号为", Parent = row3, AutoSize = true };
         var row3_6 = new TextBox() { Parent = row3, AutoSize = true, Width = 50 };
         var row3_7 = new Label() { Text = "】 的地方继续进行检测。", Parent = row3, AutoSize = true };
 
-        // // 每多少秒检测1次
-        // public int CheckSecond { get; set; } = 1;
+        int? defaultPriority1 = null;
+        int? defaultPriority2 = null;
 
-        // // 总检测时间超过多少秒后，将跳转到其他地方检测
-        // // 负数表示无限。
-        // public int Timeout { get; set; } = -1;
+        Single? result = Db.Instance.GetCollection<Single>(Single.TABLE_NAME).FindById(new BsonValue(item.Priority2ToWhere ?? ObjectId.Empty));
+        defaultPriority1 = result?.Priority1;
+        defaultPriority2 = result?.Priority2;
+        row3_4.Text = defaultPriority1?.ToString();
+        row3_6.Text = defaultPriority2?.ToString();
+        int? parse(TextBox textBox)
+        {
+            int? final;
+            int finalNotNull;
+            bool isSuccess = int.TryParse(textBox.Text, out finalNotNull);
+            if (!isSuccess)
+            {
+                finalNotNull = -1;
+            }
+            if (finalNotNull < 0)
+            {
+                finalNotNull = -1;
+            }
+            if (finalNotNull == -1)
+            {
+                final = null;
+            }
+            else
+            {
+                final = finalNotNull;
+            }
+            return final;
+        }
+        void lostFocus()
+        {
+            int? vp1 = parse(row3_4);
+            int? vp2 = parse(row3_6);
 
-        // // 跳转到哪里
-        // // 为 null 表示哪也不跳转（停止）
-        // public ObjectId? toWhere { get; set; }
+            var query = from innerList in groupSingleList
+                        from currentSingle in innerList
+                        where currentSingle.Priority1 == vp1 && currentSingle.Priority2 == vp2
+                        select new
+                        {
+                            currentSingle
+                        };
+            Single? toWhere = query.FirstOrDefault()?.currentSingle;
+            item.Priority2ToWhere = toWhere?.Id;
+            Db.Instance.insertOrModifySingleEntity(item);
+
+            row3_4.Text = vp1?.ToString() ?? "";
+            row3_6.Text = vp2?.ToString() ?? "";
+        }
+        row3_4.LostFocus += (s, e) =>
+        {
+            lostFocus();
+        };
+
+        row3_6.LostFocus += (s, e) =>
+        {
+            lostFocus();
+        };
+
+
 
         columnFlowLayoutPanel.Controls.Add(row1);
         columnFlowLayoutPanel.Controls.Add(row2);
@@ -538,69 +826,6 @@ public class FormDragDropListInOrder : Form
         // columnFlowLayoutPanel.Controls.Add(row2FlowLayoutPanel);
 
         return columnFlowLayoutPanel;
-    }
-
-
-    private Control mainExplainControl()
-    {
-        var column = new FlowLayoutPanel()
-        {
-            AutoSize = true,
-            FlowDirection = FlowDirection.TopDown,
-        };
-
-        var row1 = new FlowLayoutPanel()
-        {
-            Parent = column,
-            AutoSize = true,
-            FlowDirection = FlowDirection.LeftToRight,
-        };
-        var row2 = new FlowLayoutPanel()
-        {
-            Parent = column,
-            AutoSize = true,
-            FlowDirection = FlowDirection.LeftToRight,
-        };
-        // 【顺序检测模式】启动后，将按照【循环序号】从大到小的顺序依次执行，每个循环都会按照其【截图序号】从大到小的顺序进行检测。
-        // 以下全部循环结束后，等待？秒后，会再次重复以下全部循环，将重复以下全部循环？次。
-        var text1 = new Label() { Parent = row1, AutoSize = true, Text = "【顺序检测模式】启动后，将按照【循环序号】从大到小的顺序依次执行，每个循环都会按照其【截图序号】从大到小的顺序进行检测。" };
-        var text2 = new Label() { Parent = row2, AutoSize = true, Text = "以下全部循环结束后，等待" };
-        var text3 = new TextBox() { Parent = row2, AutoSize = true, Width = 50 };
-        var text4 = new Label() { Parent = row2, AutoSize = true, Text = "秒后，会再次重复以下全部循环，将重复以下全部循环" };
-        var text5 = new TextBox() { Parent = row2, AutoSize = true, Width = 50 };
-        var text6 = new Label() { Parent = row2, AutoSize = true, Text = "次。" };
-
-        // var addEventPanel = new FlowLayoutPanel();
-        // addEventPanel.FlowDirection = FlowDirection.TopDown;
-        // addEventPanel.AutoSize = true;
-        // var text = new Label();
-        // text.AutoSize = true;
-        // text.Text = "会按照顺序依次进行点击操作";
-
-        // var loopTimePanel = new FlowLayoutPanel();
-        // loopTimePanel.FlowDirection = FlowDirection.LeftToRight;
-        // loopTimePanel.AutoSize = true;
-        // var timeLabel1 = new Label();
-        // timeLabel1.Text = "每";
-        // timeLabel1.AutoSize = true;
-        // var timeLabel2 = new Label();
-        // timeLabel2.Text = "秒触发一次循环事件";
-        // timeLabel2.AutoSize = true;
-        // var timeBox = new TextBox();
-
-        // timeBox.Text = Db.Instance.GetValueByKey(Db.LOOP_EVENT_TIME_CYCLE_IN_ORDER);
-        // Db.Instance.setLoopTime(Db.Instance.GetValueByKey(Db.LOOP_EVENT_TIME_CYCLE_IN_ORDER), EventMode.InOrder);
-        // timeBox.Leave += (s, e) =>
-        // {
-        //     timeBox.Text = Db.Instance.setLoopTime(timeBox.Text, EventMode.InOrder).ToString();
-        // };
-        // loopTimePanel.Controls.Add(timeLabel1);
-        // loopTimePanel.Controls.Add(timeBox);
-        // loopTimePanel.Controls.Add(timeLabel2);
-
-        // addEventPanel.Controls.Add(text);
-        // addEventPanel.Controls.Add(loopTimePanel);
-        return column;
     }
 
     // 优先级

@@ -35,9 +35,10 @@ public class FormDragDropListSimultaneously : Form
         // 显示列表中的元素
         ReShowItems();
 
-        bodyFlowLayoutPanel.Controls.Add(addEventButtonControl());
+        bodyFlowLayoutPanel.Controls.Add(headerControl());
         bodyFlowLayoutPanel.Controls.Add(eventFlowLayoutPanel);
-        mainFlowLayoutPanel.Controls.Add(startOrCancelControl());
+        var v = startOrCancelControl();
+        mainFlowLayoutPanel.Controls.Add(v);
         mainFlowLayoutPanel.Controls.Add(bodyFlowLayoutPanel);
         this.Controls.Add(mainFlowLayoutPanel);
     }
@@ -54,10 +55,10 @@ public class FormDragDropListSimultaneously : Form
 
         foreach (var item in singleList)
         {
-            // 创建一个包含两个子控件的元素
             var singlePanel = new FlowLayoutPanel();
             singlePanel.FlowDirection = FlowDirection.LeftToRight;
             singlePanel.AutoSize = true;
+
 
             singlePanel.Controls.Add(priorityLabelControl(item));
             singlePanel.Controls.Add(upDownPanelControl(item));
@@ -87,7 +88,7 @@ public class FormDragDropListSimultaneously : Form
             {
                 Global.startingEventMode = EventMode.None;
                 button.Text = "启动";
-                Global.timer.Stop();
+                TimerElapser.stopSimultaneouslyTimer();
                 bodyFlowLayoutPanel.Visible = true;
                 Console.WriteLine("暂停成功");
             }
@@ -95,8 +96,7 @@ public class FormDragDropListSimultaneously : Form
             {
                 Global.startingEventMode = EventMode.Simultaneously;
                 button.Text = "暂停";
-                Db.Instance.setLoopTime(Db.Instance.GetValueByKey(Db.LOOP_EVENT_TIME_CYCLE_SIMULTANEOUSLY), EventMode.Simultaneously);
-                Global.timer.Start();
+                TimerElapser.startSimultaneouslyTimer();
                 bodyFlowLayoutPanel.Visible = false;
                 Console.WriteLine("启动成功");
 
@@ -122,132 +122,196 @@ public class FormDragDropListSimultaneously : Form
     // 参数
     private Control paramControl(Single item)
     {
-        var paramPanel = new FlowLayoutPanel();
-        paramPanel.FlowDirection = FlowDirection.TopDown;
-        paramPanel.AutoSize = true;
-
-        var similarityThresholdRowPanel = new FlowLayoutPanel();
-        similarityThresholdRowPanel.FlowDirection = FlowDirection.LeftToRight;
-        similarityThresholdRowPanel.AutoSize = true;
-        var similarityThresholdLabel = new Label();
-        similarityThresholdLabel.AutoSize = true;
-        similarityThresholdLabel.Text = "相似阈值：";
-        var similarityThreshold = new TextBox();
-        similarityThreshold.AutoSize = true;
-        similarityThreshold.Text = item.SimilarityThreshold.ToString();
-        similarityThreshold.Leave += (s, e) =>
+        var colomn = new FlowLayoutPanel()
         {
-            double v;
-            bool isTry = double.TryParse(similarityThreshold.Text, out v);
-            if (v < 0)
-            {
-                v = 0;
-            }
-            else if (v > 1)
-            {
-                v = 1.0;
-            }
-            similarityThreshold.Text = v.ToString();
-            item.SimilarityThreshold = v;
-            Db.Instance.insertOrModifySingleEntity(item);
+            FlowDirection = FlowDirection.TopDown,
+            AutoSize = true
         };
-        ToolTip toolTip1 = new ToolTip();
-        toolTip1.IsBalloon = true;
-        toolTip1.ShowAlways = true;
-
-        toolTip1.SetToolTip(similarityThresholdRowPanel, "范围：0~1");
-        similarityThresholdRowPanel.Controls.Add(similarityThresholdLabel);
-        similarityThresholdRowPanel.Controls.Add(similarityThreshold);
-
-
-
-        var positionBlockTypeRowPanel = new FlowLayoutPanel();
-        positionBlockTypeRowPanel.FlowDirection = FlowDirection.LeftToRight;
-        positionBlockTypeRowPanel.AutoSize = true;
-        var positionBlockTypeLabel = new Label();
-        positionBlockTypeLabel.AutoSize = true;
-        positionBlockTypeLabel.Text = "识别区位：";
-        var positionBlockTypeBox = new ComboBox();
-        positionBlockTypeBox.AutoSize = true;
-        positionBlockTypeBox.Width = 300;
-        positionBlockTypeBox.DropDownWidth = 300;
-        positionBlockTypeBox.DropDownStyle = ComboBoxStyle.DropDownList;
-        positionBlockTypeBox.MouseWheel += (s, e) => { ((HandledMouseEventArgs)e).Handled = true; };
-        foreach (var t in Tool.Method.GetEnumMembers<PositionBlockType>())
+        var row1 = new FlowLayoutPanel()
         {
-            positionBlockTypeBox.Items.Add(Tool.Method.GetEnumDescription(t));
+            Parent = colomn,
+            FlowDirection = FlowDirection.LeftToRight,
+            AutoSize = true
+        };
+        var row2 = new FlowLayoutPanel()
+        {
+            Parent = colomn,
+            FlowDirection = FlowDirection.LeftToRight,
+            AutoSize = true
+        };
+        var row3 = new FlowLayoutPanel()
+        {
+            Parent = colomn,
+            FlowDirection = FlowDirection.LeftToRight,
+            AutoSize = true
+        };
+        // 在屏幕上检测一次与该截图相似度为？的地方，若检测到多处，则取用？作为触发位置。
+        var row1_1 = new Label() { Parent = row1, AutoSize = true, Text = "在屏幕上检测一次与该截图相似度为" };
+        var row1_2 = new TextBox() { Parent = row1, Width = 50 };
+        row1_2.Text = Db.Instance.GetSingleSth<double>(
+            single: item,
+            oldValueRead: oS => oS.SimilarityThreshold,
+            newValueRead: nS => nS?.SimilarityThreshold,
+            newValueToOldValue: (oS, n) => oS.SimilarityThreshold = n,
+            min: 0,
+            max: 1
+        );
+        row1_2.Leave += (s, e) =>
+        {
+            row1_2.Text = Db.Instance.SetSingleSth<double>(
+                single: item,
+                oldValueRead: oS => oS.SimilarityThreshold,
+                newValue: row1_2.Text,
+                newValueToOldValue: (oS, n) => oS.SimilarityThreshold = n,
+                min: 0,
+                max: 1
+            );
+        };
+        var row1_3 = new Label() { Parent = row1, AutoSize = true, Text = "的地方，若检测到多处，则取用" };
+        var row1_4 = new ComboBox()
+        {
+            Parent = row1,
+            Width = 200,
+            DropDownWidth = 300,
+            DropDownStyle = ComboBoxStyle.DropDownList
+        };
+        row1_4.MouseWheel += (s, e) => { ((HandledMouseEventArgs)e).Handled = true; };
+        foreach (var t in Enum.GetValues(typeof(PositionBlockType)))
+        {
+            row1_4.Items.Add(Tool.Method.GetEnumDescription((PositionBlockType)t));
         }
-        positionBlockTypeBox.SelectedIndex = Tool.Method.GetEnumIndex<PositionBlockType>(item.PositionBlockType);
-        positionBlockTypeBox.SelectedIndexChanged += (s, e) =>
+        row1_4.SelectedIndex = int.Parse(Db.Instance.GetSingleSth<int>(
+            single: item,
+            oldValueRead: oS => (int?)oS.PositionBlockType,
+            newValueRead: nS => (int?)nS?.PositionBlockType,
+            newValueToOldValue: (oS, n) => oS.PositionBlockType = (PositionBlockType)n,
+            min: 0,
+            max: Enum.GetNames(typeof(PositionBlockType)).Length
+            ));
+        row1_4.SelectedIndexChanged += (s, e) =>
         {
-            item.PositionBlockType = Tool.Method.GetEnumMembers<PositionBlockType>()[positionBlockTypeBox.SelectedIndex];
-            Db.Instance.insertOrModifySingleEntity(item);
+            item.PositionBlockType = (PositionBlockType)int.Parse(Db.Instance.SetSingleSth<int>(
+                single: item,
+                oldValueRead: oS => (int?)oS.PositionBlockType,
+                newValue: row1_4.SelectedIndex.ToString(),
+                newValueToOldValue: (oS, n) => oS.PositionBlockType = (PositionBlockType)n,
+                min: 0,
+                max: Enum.GetNames(typeof(PositionBlockType)).Length
+            ));
+        };
+        var row1_5 = new Label() { Parent = row1, AutoSize = true, Text = "作为触发位置。" };
+
+        // 如果触发该检测，则对其区域进行一次？操作。
+        var row2_1 = new Label() { Parent = row2, AutoSize = true, Text = "如果触发该检测，则对其区域进行一次" };
+        var row2_2 = new ComboBox()
+        {
+            Parent = row2,
+            Width = 100,
+            DropDownWidth = 200,
+            DropDownStyle = ComboBoxStyle.DropDownList
+        };
+        row2_2.MouseWheel += (s, e) => { ((HandledMouseEventArgs)e).Handled = true; };
+        foreach (var t in Enum.GetValues(typeof(EventKey)))
+        {
+            row2_2.Items.Add(Tool.Method.GetEnumDescription((EventKey)t));
+        }
+        row2_2.SelectedIndex = int.Parse(Db.Instance.GetSingleSth<int>(
+            single: item,
+            oldValueRead: oS => (int?)oS.EventKey,
+            newValueRead: nS => (int?)nS?.EventKey,
+            newValueToOldValue: (oS, n) => oS.EventKey = (EventKey)n,
+            min: 0,
+            max: Enum.GetNames(typeof(EventKey)).Length
+            ));
+        row2_2.SelectedIndexChanged += (s, e) =>
+        {
+            item.EventKey = (EventKey)int.Parse(Db.Instance.SetSingleSth<int>(
+                single: item,
+                oldValueRead: oS => (int?)oS.EventKey,
+                newValue: row2_2.SelectedIndex.ToString(),
+                newValueToOldValue: (oS, n) => oS.EventKey = (EventKey)n,
+                min: 0,
+                max: Enum.GetNames(typeof(EventKey)).Length
+            ));
         };
 
-        positionBlockTypeRowPanel.Controls.Add(positionBlockTypeLabel);
-        positionBlockTypeRowPanel.Controls.Add(positionBlockTypeBox);
-
-        paramPanel.Controls.Add(similarityThresholdRowPanel);
-        paramPanel.Controls.Add(positionBlockTypeRowPanel);
-        paramPanel.Controls.Add(explainControl(item));
-
-        return paramPanel;
+        return colomn;
     }
 
     // 添加截图按钮
-    private Control addEventButtonControl()
+    private Control headerControl()
     {
-        var addEventPanel = new FlowLayoutPanel();
-        addEventPanel.FlowDirection = FlowDirection.TopDown;
-        addEventPanel.AutoSize = true;
-        Button addButton = new Button();
-        addButton.Text = "➕ 增加截图";
-        addButton.Scale(new SizeF(2, 2));
-        addButton.MouseClick += (s, e) =>
+        var header = new FlowLayoutPanel();
+        header.FlowDirection = FlowDirection.TopDown;
+        header.AutoSize = true;
+
+        var row1 = new FlowLayoutPanel();
+        row1.FlowDirection = FlowDirection.LeftToRight;
+        row1.AutoSize = true;
+        // 【同时检测模式】启动后，每？秒都会在屏幕上同时检测下面列表中的全部截图，并会触发序号最高的事件1次。
+        var text1 = new Label() { Parent = row1, AutoSize = true, Text = "【同时检测模式】启动后，每" };
+        var text2 = new TextBox() { Parent = row1, Width = 50 };
+        text2.Text = Db.Instance.GetSth<int>(Db.SIMULTANEOUSLY_LOOP_EVENT_TIME_CYCLE, 1);
+        text2.Leave += (s, e) =>
+        {
+            text2.Text = Db.Instance.SetSth<int>(Db.SIMULTANEOUSLY_LOOP_EVENT_TIME_CYCLE, text2.Text, 1);
+        };
+        var text3 = new Label() { Parent = row1, AutoSize = true, Text = "秒都会在屏幕上同时检测下面列表中的全部截图，并会触发序号最高的事件1次。" };
+        var row2 = new Label() { AutoSize = true, Text = "注意：截图越多，循环时间应该设置的越大，因为截图越多每次同时检测耗时就越长" };
+
+        Button row3 = new Button();
+        row3.Text = "➕ 增加截图";
+        row3.Scale(new SizeF(2, 2));
+        row3.MouseClick += (s, e) =>
         {
             var maxSingleResult = Db.Instance.GetCollection<Single>(Single.TABLE_NAME)
             .Find(Db.Instance.eventModeQuery(EventMode.Simultaneously)).OrderByDescending((e) => e.Priority1).FirstOrDefault();
             if (maxSingleResult == null)
             {
-                Db.Instance.insertOrModifySingleEntity(new Single(0, null, null, null, EventMode.Simultaneously) { Id = null });
+                Db.Instance.insertOrModifySingleEntity(
+                    new Single(
+                        imagePath: null,
+                        explain: null,
+                        similarityThreshold: 0.7,
+                        positionBlockType: PositionBlockType.left_top,
+                        eventMode: EventMode.Simultaneously,
+                        eventKey: EventKey.mouseLeftClick,
+                        priority1: 0,
+                        priority1LoopTimes: 3,
+                        priority2ToNextAfterSecond: null,
+                        priority2: null,
+                        priority2CheckSecond: null,
+                        priority2TimeoutSecond: null,
+                        priority2toWhere: null
+                    )
+                    );
             }
             else
             {
-                Db.Instance.insertOrModifySingleEntity(new Single(maxSingleResult.Priority1 + 1, null, null, null, EventMode.Simultaneously) { Id = null });
+                Db.Instance.insertOrModifySingleEntity(new Single(
+                        imagePath: null,
+                        explain: null,
+                        similarityThreshold: 0.7,
+                        positionBlockType: PositionBlockType.left_top,
+                        eventMode: EventMode.Simultaneously,
+                        eventKey: EventKey.mouseLeftClick,
+                        priority1: maxSingleResult.Priority1 + 1,
+                        priority1LoopTimes: 3,
+                        priority2ToNextAfterSecond: null,
+                        priority2: null,
+                        priority2CheckSecond: null,
+                        priority2TimeoutSecond: null,
+                        priority2toWhere: null
+                    ));
             }
             ReShowItems();
         };
 
-        var text = new Label();
-        text.AutoSize = true;
-        text.Text = "每次触发循环事件，都会在屏幕上检测下面列表中的全部截图，并会触发其中的一个点击事件一次。"
-        + "\n会按照优先级从高到低进行检测，优先级高的将被触发点击，后面的截图不会继续触发点击。";
 
-        var loopTimePanel = new FlowLayoutPanel();
-        loopTimePanel.FlowDirection = FlowDirection.LeftToRight;
-        loopTimePanel.AutoSize = true;
-        var timeLabel1 = new Label();
-        timeLabel1.Text = "每";
-        timeLabel1.AutoSize = true;
-        var timeLabel2 = new Label();
-        timeLabel2.Text = "秒触发一次循环事件";
-        timeLabel2.AutoSize = true;
-        var timeBox = new TextBox();
-
-        timeBox.Text = Db.Instance.GetValueByKey(Db.LOOP_EVENT_TIME_CYCLE_SIMULTANEOUSLY);
-        Db.Instance.setLoopTime(Db.Instance.GetValueByKey(Db.LOOP_EVENT_TIME_CYCLE_SIMULTANEOUSLY), EventMode.Simultaneously);
-        timeBox.Leave += (s, e) =>
-        {
-            timeBox.Text = Db.Instance.setLoopTime(timeBox.Text, EventMode.Simultaneously).ToString();
-        };
-        loopTimePanel.Controls.Add(timeLabel1);
-        loopTimePanel.Controls.Add(timeBox);
-        loopTimePanel.Controls.Add(timeLabel2);
-
-        addEventPanel.Controls.Add(text);
-        addEventPanel.Controls.Add(loopTimePanel);
-        addEventPanel.Controls.Add(addButton);
-        return addEventPanel;
+        header.Controls.Add(row1);
+        header.Controls.Add(row2);
+        header.Controls.Add(row3);
+        return header;
     }
 
     // 优先级
@@ -281,7 +345,7 @@ public class FormDragDropListSimultaneously : Form
             else
             {
                 int last = current - 1;
-                int tempPriority = singleList[current].Priority1;
+                int tempPriority = (int)singleList[current].Priority1!;
                 singleList[current].Priority1 = singleList[last].Priority1;
                 singleList[last].Priority1 = tempPriority;
                 Db.Instance.insertOrModifySingleEntity(singleList[current]);
@@ -300,7 +364,7 @@ public class FormDragDropListSimultaneously : Form
             else
             {
                 int next = current + 1;
-                int tempPriority = singleList[current].Priority1;
+                int tempPriority = (int)singleList[current].Priority1!;
                 singleList[current].Priority1 = singleList[next].Priority1;
                 singleList[next].Priority1 = tempPriority;
                 Db.Instance.insertOrModifySingleEntity(singleList[current]);
@@ -369,27 +433,6 @@ public class FormDragDropListSimultaneously : Form
         return pictureBox;
     }
 
-    // 描述
-    private Control explainControl(Single item)
-    {
-        var explains = new FlowLayoutPanel();
-        explains.FlowDirection = FlowDirection.LeftToRight;
-        explains.AutoSize = true;
-        var text = new Label();
-        text.AutoSize = true;
-        text.Text = "选区描述：";
-        var textBox = new TextBox();
-        textBox.AutoSize = true;
-        textBox.Text = item.Explain;
-        textBox.Leave += (s, e) =>
-        {
-            item.Explain = textBox.Text;
-            Db.Instance.insertOrModifySingleEntity(item);
-        };
-        explains.Controls.Add(text);
-        explains.Controls.Add(textBox);
-        return explains;
-    }
 
     // 移除事件按钮
     private Control removeSingleButtonControl(Single item)

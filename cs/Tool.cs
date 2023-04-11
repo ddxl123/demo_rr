@@ -78,22 +78,73 @@ namespace Tool
     // 自动点击
     public class Clicker
     {
+
+        public static void Handle(EventKey eventKey, Rectangle rectangle)
+        {
+            if (eventKey == EventKey.mouseLeftClick)
+            {
+                MouseLeftClick(rectangle);
+                return;
+            }
+            if (eventKey == EventKey.mouseLeftDoubleClick)
+            {
+                MouseLeftDoubleClick(rectangle);
+                return;
+            }
+            if (eventKey == EventKey.mouseLeftLongClick)
+            {
+                MouseLeftLongPress(rectangle);
+                return;
+            }
+            if (eventKey == EventKey.mouseRightClick)
+            {
+                MouseRightClick(rectangle);
+                return;
+            }
+            throw new Exception($"未处理事件 {eventKey}");
+        }
         [DllImport("user32.dll")]
         private static extern bool SetCursorPos(int x, int y);
 
         [DllImport("user32.dll")]
         private static extern void mouse_event(uint dwFlags, int dx, int dy, uint dwData, int dwExtraInfo);
 
-        private const uint MOUSEEVENTF_LEFTDOWN = 0x02;
-        private const uint MOUSEEVENTF_LEFTUP = 0x04;
-        public static void Click(Rectangle rect)
+        private static void MouseLeftClick(Rectangle rect)
         {
             int x = rect.Left + rect.Width / 2;
             int y = rect.Top + rect.Height / 2;
 
             SetCursorPos(x, y);
 
-            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, x, y, 0, 0);
+            mouse_event(0x02 | 0x04, x, y, 0, 0);
+        }
+
+        private static void MouseRightClick(Rectangle rect)
+        {
+            int x = rect.Left + rect.Width / 2;
+            int y = rect.Top + rect.Height / 2;
+
+            SetCursorPos(x, y);
+
+            mouse_event(0x08 | 0x10, x, y, 0, 0);
+        }
+
+        private static void MouseLeftDoubleClick(Rectangle rect)
+        {
+            int x = rect.Left + rect.Width / 2;
+            int y = rect.Top + rect.Height / 2;
+
+            SetCursorPos(x, y);
+            mouse_event(0x02 | 0x04, x, y, 0, 0);
+            mouse_event(0x02 | 0x04, x, y, 0, 0);
+        }
+        private static void MouseLeftLongPress(Rectangle rect)
+        {
+            int x = rect.Left + rect.Width / 2;
+            int y = rect.Top + rect.Height / 2;
+            mouse_event(0x02, x, y, 0, 0);
+            System.Threading.Thread.Sleep(2000);
+            mouse_event(0x04, x, y, 0, 0);
         }
     }
 
@@ -177,20 +228,6 @@ namespace Tool
 
     public class Method
     {
-
-        // 获取枚举全部成员
-        public static T[] GetEnumMembers<T>()
-        {
-            return (T[])Enum.GetValues(typeof(T));
-        }
-
-
-        public static int GetEnumIndex<T>(Enum value)
-        {
-            return Array.IndexOf(GetEnumMembers<T>(), value);
-        }
-
-
         // 获取指定枚举对应的描述
         public static string GetEnumDescription(Enum value)
         {

@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Timers;
+using System.Windows;
 using Tool;
 
 public static class Global
@@ -9,17 +10,15 @@ public static class Global
 
     public static FlowLayoutPanel bodyFlowLayoutPanelInOrder = new FlowLayoutPanel();
 
-    public static Button buttonSimultaneously = new Button()
-    {
-        Text = "",
-    };
-    public static Button buttonInOrder = new Button()
-    {
-        Text = "",
-    };
+    public static Button buttonSimultaneously = new Button();
+    public static Button buttonInOrder = new Button();
     public static EventMode startingEventMode = EventMode.None;
 
-    public static System.Timers.Timer timer = new System.Timers.Timer();
+    public static System.Timers.Timer simultaneouslyTimer = new System.Timers.Timer();
+
+    // 当前执行到哪了
+    // public static Single? inOrderTimerSingle = null;
+
 
     public static FormDragDropListSimultaneously formDragDropListSimultaneously = new FormDragDropListSimultaneously();
 
@@ -36,7 +35,8 @@ public static class Global
         deleteSingleOnClose(homeForm);
 
         // 触发内容只赋值一次
-        Global.timer.Elapsed += TimerElapser.TimerElapsed;
+        Global.simultaneouslyTimer.AutoReset = true;
+        Global.simultaneouslyTimer.Elapsed += TimerElapser.simultaneouslyTimerElapsed;
     }
 
     // 退出应用时删除不需要的文件
