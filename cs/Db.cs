@@ -84,15 +84,18 @@ public sealed class Db
     // event_mode 值为对应的 [eventMode] 的 Query。
     public BsonExpression eventModeQuery(EventMode eventModeValue)
     {
-        return Query.EQ("EventMode", new BsonValue(eventModeValue));
+        // 必须 ToString
+        return Query.EQ("EventMode", new BsonValue(eventModeValue.ToString()));
     }
     public BsonExpression Priority1Query(int priority1Value)
     {
+        // 不能 ToString
         return Query.EQ("Priority1", new BsonValue(priority1Value));
     }
 
     public BsonExpression Priority2Query(int priority2Value)
     {
+        // 不能 ToString
         return Query.EQ("Priority2", new BsonValue(priority2Value));
     }
 
@@ -216,8 +219,8 @@ public sealed class Db
 
             if (final != intOldValue)
             {
-                newValueToOldValue(result, (T)(object)final);
-                insertOrModifySingleEntity(result);
+                newValueToOldValue(single, (T)(object)final);
+                insertOrModifySingleEntity(single);
             }
             return final.ToString();
         }
@@ -248,8 +251,8 @@ public sealed class Db
 
             if (final != intOldValue)
             {
-                newValueToOldValue(result, (T)(object)final);
-                insertOrModifySingleEntity(result);
+                newValueToOldValue(single, (T)(object)final);
+                insertOrModifySingleEntity(single);
             }
             return final.ToString();
         }
@@ -268,7 +271,6 @@ public sealed class Db
         ) where T : struct, IComparable?
     {
         Single? result = GetCollection<Single>(Single.TABLE_NAME).FindById(new BsonValue(single.Id));
-
         // 若获取到的结果字符异常，则自动重新设置，例如为 null
         return SetSingleSth<T>(single, oldValueRead, newValueRead(result)?.ToString(), newValueToOldValue, min, max);
     }

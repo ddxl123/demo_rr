@@ -51,9 +51,33 @@ public class FormDragDropListInOrder : Form
         bodyFlowLayoutPanel.Controls.Add(allEventFlowLayoutPanel);
         // bodyFlowLayoutPanel.Controls.Add(singleEventFlowLayoutPanel);
 
-        // mainFlowLayoutPanel.Controls.Add(startOrCancelControl());
+        mainFlowLayoutPanel.Controls.Add(startOrCancelControl());
         mainFlowLayoutPanel.Controls.Add(bodyFlowLayoutPanel);
         this.Controls.Add(mainFlowLayoutPanel);
+    }
+
+    private Control startOrCancelControl()
+    {
+        var button = new Button();
+        button.Scale(new SizeF(1.5f, 1.5f));
+        button.Text = Global.startingEventMode == EventMode.InOrder ? "停止" : "启动";
+        button.MouseClick += async (s, e) =>
+        {
+            if (Global.startingEventMode == EventMode.InOrder)
+            {
+                button.Text = "启动";
+                Global.bodyFlowLayoutPanelInOrder.Visible = true;
+                Global.startingEventMode = EventMode.None;
+            }
+            else
+            {
+                button.Text = "暂停";
+                Global.bodyFlowLayoutPanelInOrder.Visible = false;
+                Global.startingEventMode = EventMode.InOrder;
+                await TimerElapser.startInOrder(Db.Instance.GetCollection<Single>(Single.TABLE_NAME).Find(Db.Instance.eventModeQuery(EventMode.InOrder)).OrderByDescending(e => e.Priority1).First());
+            }
+        };
+        return button;
     }
 
 
@@ -83,10 +107,10 @@ public class FormDragDropListInOrder : Form
         var text1 = new Label() { Parent = row1, AutoSize = true, Text = "【顺序检测模式】启动后，将按照【循环序号】从大到小的顺序依次执行，每个循环都会按照其【截图序号】从大到小的顺序进行检测。" };
         var text2 = new Label() { Parent = row2, AutoSize = true, Text = "以下全部循环结束后，等待" };
         var text3 = new TextBox() { Parent = row2, AutoSize = true, Width = 50 };
-        text3.Text = Db.Instance.GetSth<int>(Db.IN_ORDER_LOOP_EVENT_WAIT_SECOND, -1);
+        text3.Text = Db.Instance.GetSth<int>(Db.IN_ORDER_LOOP_EVENT_WAIT_SECOND, 0);
         text3.LostFocus += (s, e) =>
         {
-            text3.Text = Db.Instance.SetSth<int>(Db.IN_ORDER_LOOP_EVENT_WAIT_SECOND, text3.Text, -1);
+            text3.Text = Db.Instance.SetSth<int>(Db.IN_ORDER_LOOP_EVENT_WAIT_SECOND, text3.Text, 0);
         };
         var text4 = new Label() { Parent = row2, AutoSize = true, Text = "秒后，会再次重复以下全部循环，将重复以下全部循环" };
         var text5 = new TextBox() { Parent = row2, AutoSize = true, Width = 50 };
@@ -152,10 +176,10 @@ public class FormDragDropListInOrder : Form
                         eventKey: EventKey.mouseLeftClick,
                         priority1: 0,
                         priority1LoopTimes: 1,
-                        priority2ToNextAfterSecond: null,
+                        priority2ToNextAfterSecond: 0,
                         priority2: 0,
-                        priority2CheckSecond: null,
-                        priority2TimeoutSecond: null,
+                        priority2CheckSecond: 1,
+                        priority2TimeoutSecond: 999999,
                         priority2toWhere: null
                     ));
             }
@@ -170,10 +194,10 @@ public class FormDragDropListInOrder : Form
                         eventKey: EventKey.mouseLeftClick,
                         priority1: (maxSingleResult?.Priority1 ?? -1) + 1,
                         priority1LoopTimes: 1,
-                        priority2ToNextAfterSecond: null,
+                        priority2ToNextAfterSecond: 0,
                         priority2: 0,
-                        priority2CheckSecond: null,
-                        priority2TimeoutSecond: null,
+                        priority2CheckSecond: 1,
+                        priority2TimeoutSecond: 999999,
                         priority2toWhere: null
                     ));
             }
@@ -198,7 +222,6 @@ public class FormDragDropListInOrder : Form
 
         groupEventFlowLayoutPanelControl();
     }
-
     private void groupEventFlowLayoutPanelControl()
     {
         groupSingleList.ForEach((groupSingle) =>
@@ -306,10 +329,10 @@ public class FormDragDropListInOrder : Form
                         eventKey: EventKey.mouseLeftClick,
                         priority1: groupSingle.First().Priority1,
                         priority1LoopTimes: 1,
-                        priority2ToNextAfterSecond: null,
+                        priority2ToNextAfterSecond: 999999,
                         priority2: groupSingle.OrderByDescending(o => o.Priority2).First().Priority2! + 1,
-                        priority2CheckSecond: null,
-                        priority2TimeoutSecond: null,
+                        priority2CheckSecond: 1,
+                        priority2TimeoutSecond: 0,
                         priority2toWhere: null
                     );
                 Db.Instance.insertOrModifySingleEntity(newSingle);

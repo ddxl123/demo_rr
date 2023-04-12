@@ -6,11 +6,10 @@ using Tool;
 public static class Global
 {
 
-    public static FlowLayoutPanel bodyFlowLayoutPanelSimultaneously = new FlowLayoutPanel();
 
     public static FlowLayoutPanel bodyFlowLayoutPanelInOrder = new FlowLayoutPanel();
 
-    public static Button buttonSimultaneously = new Button();
+    public static Button buttonSimultaneously = new Button() { Text = "启动" };
     public static Button buttonInOrder = new Button();
     public static EventMode startingEventMode = EventMode.None;
 
@@ -33,7 +32,6 @@ public static class Global
     public static void init(HomeForm homeForm)
     {
         deleteSingleOnClose(homeForm);
-
         // 触发内容只赋值一次
         Global.simultaneouslyTimer.AutoReset = true;
         Global.simultaneouslyTimer.Elapsed += TimerElapser.simultaneouslyTimerElapsed;

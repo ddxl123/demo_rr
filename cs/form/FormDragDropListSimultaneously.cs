@@ -9,17 +9,14 @@ public class FormDragDropListSimultaneously : Form
 
     private Point dragStartPoint;
 
-    public FlowLayoutPanel mainFlowLayoutPanel = new FlowLayoutPanel();
 
-    public FlowLayoutPanel bodyFlowLayoutPanel = Global.bodyFlowLayoutPanelSimultaneously;
+    public FlowLayoutPanel bodyFlowLayoutPanel = new FlowLayoutPanel();
 
     public FlowLayoutPanel eventFlowLayoutPanel = new FlowLayoutPanel();
 
     public FormDragDropListSimultaneously()
     {
         this.AutoSize = true;
-        mainFlowLayoutPanel.AutoSize = true;
-        mainFlowLayoutPanel.FlowDirection = FlowDirection.TopDown;
 
         bodyFlowLayoutPanel.AutoSize = true;
         bodyFlowLayoutPanel.FlowDirection = FlowDirection.TopDown;
@@ -38,9 +35,8 @@ public class FormDragDropListSimultaneously : Form
         bodyFlowLayoutPanel.Controls.Add(headerControl());
         bodyFlowLayoutPanel.Controls.Add(eventFlowLayoutPanel);
         var v = startOrCancelControl();
-        mainFlowLayoutPanel.Controls.Add(v);
-        mainFlowLayoutPanel.Controls.Add(bodyFlowLayoutPanel);
-        this.Controls.Add(mainFlowLayoutPanel);
+        this.Controls.Add(v);
+        this.Controls.Add(bodyFlowLayoutPanel);
     }
 
     private void ReShowItems()
@@ -108,7 +104,7 @@ public class FormDragDropListSimultaneously : Form
                 else if (button == Global.buttonInOrder)
                 {
                     Global.buttonSimultaneously.Text = "启动";
-                    Global.bodyFlowLayoutPanelSimultaneously.Visible = true;
+                    bodyFlowLayoutPanel.Visible = true;
                 }
                 else
                 {

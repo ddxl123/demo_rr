@@ -79,73 +79,253 @@ namespace Tool
     public class Clicker
     {
 
+        //导入user32.dll中的SendInput函数，用于模拟鼠标输入
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern uint SendInput(uint nInputs, ref INPUT pInputs, int cbSize);
+
+        //导入user32.dll中的SetCursorPos函数，用于设置鼠标光标位置
+        [DllImport("user32.dll")]
+        static extern bool SetCursorPos(int X, int Y);
+
+        //导入user32.dll中的GetCursorPos函数，用于获取鼠标光标位置
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool GetCursorPos(out Point lpPoint);
+
+        //定义一个结构体，表示输入事件的类型和数据
+        [StructLayout(LayoutKind.Sequential)]
+        struct INPUT
+        {
+            public SendInputEventType type; //输入事件的类型，可以是鼠标、键盘或硬件
+            public MouseKeybdhardwareInputUnion mkhi; //输入事件的数据，根据类型不同而不同
+            internal static int Size //输入事件的大小，用于传递给SendInput函数
+            {
+                get { return Marshal.SizeOf(typeof(INPUT)); }
+            }
+        }
+
+        //定义一个联合体，表示鼠标、键盘或硬件输入事件的数据
+        [StructLayout(LayoutKind.Explicit)]
+        struct MouseKeybdhardwareInputUnion
+        {
+            [FieldOffset(0)]
+            public MouseInputData mi; //鼠标输入事件的数据
+
+            [FieldOffset(0)]
+            public KEYBDINPUT ki; //键盘输入事件的数据
+
+            [FieldOffset(0)]
+            public HARDWAREINPUT hi; //硬件输入事件的数据
+        }
+
+        //定义一个结构体，表示键盘输入事件的数据
+        [StructLayout(LayoutKind.Sequential)]
+        struct KEYBDINPUT
+        {
+            public ushort wVk; //虚拟键码
+            public ushort wScan; //扫描码
+            public uint dwFlags; //标志位，表示按下或释放等状态
+            public uint time; //时间戳，如果为0则系统自动提供
+            public IntPtr dwExtraInfo; //额外信息，一般为0
+        }
+
+        //定义一个结构体，表示硬件输入事件的数据
+        [StructLayout(LayoutKind.Sequential)]
+        struct HARDWAREINPUT
+        {
+            public int uMsg; //消息码
+            public short wParamL; //低位参数值
+            public short wParamH; //高位参数值
+        }
+
+        //定义一个结构体，表示鼠标输入事件的数据
+        struct MouseInputData
+        {
+            public int dx; //鼠标相对或绝对水平位置（取决于MOUSEEVENTF_ABSOLUTE标志）
+            public int dy; //鼠标相对或绝对垂直位置（取决于MOUSEEVENTF_ABSOLUTE标志）
+            public uint mouseData; //鼠标滚轮或X按钮的数据（取决于dwFlags）
+            public MouseEventFlags dwFlags; //鼠标事件的标志位，表示移动、点击、滚动等操作
+            public uint time; //时间戳，如果为0则系统自动提供
+            public IntPtr dwExtraInfo; //额外信息，一般为0
+        }
+
+        //定义一个枚举，表示鼠标事件的标志位
+        [Flags]
+        enum MouseEventFlags : uint
+        {
+            MOUSEEVENTF_MOVE = 0x0001, //鼠标移动
+            MOUSEEVENTF_LEFTDOWN = 0x0002, //鼠标左键按下
+            MOUSEEVENTF_LEFTUP = 0x0004, //鼠标左键释放
+            MOUSEEVENTF_RIGHTDOWN = 0x0008, //鼠标右键按下
+            MOUSEEVENTF_RIGHTUP = 0x0010, //鼠标右键释放
+            MOUSEEVENTF_MIDDLEDOWN = 0x0020, //鼠标中键按下
+            MOUSEEVENTF_MIDDLEUP = 0x0040, //鼠标中键释放
+            MOUSEEVENTF_XDOWN = 0x0080, //鼠标X按钮按下
+            MOUSEEVENTF_XUP = 0x0100, //鼠标X按钮释放
+            MOUSEEVENTF_WHEEL = 0x0800, //鼠标滚轮滚动
+            MOUSEEVENTF_VIRTUALDESK = 0x4000, //使用虚拟桌面的坐标
+            MOUSEEVENTF_ABSOLUTE = 0x8000 //使用绝对坐标（相对于屏幕）
+        }
+
+        //定义一个枚举，表示输入事件的类型
+        enum SendInputEventType : int
+        {
+            InputMouse, //鼠标输入事件
+            InputKeyboard, //键盘输入事件
+            InputHardware //硬件输入事件
+        }
+
+        //定义一个公共静态方法，用于模拟鼠标左键单击指定区域的中心位置
+        public static void ClickLeftMouseButton(Rectangle rect)
+        {
+            INPUT mouseInput = new INPUT(); //创建一个INPUT结构体实例，用于存储鼠标输入事件的数据
+            mouseInput.type = SendInputEventType.InputMouse; //设置输入事件的类型为鼠标输入事件
+
+            mouseInput.mkhi.mi.dx = (rect.X + rect.Width / 2) * 65536 / Screen.PrimaryScreen!.Bounds.Width; ; //设置鼠标水平位置为区域的中心位置（如果使用绝对坐标，需要乘以65535除以屏幕宽度）
+            mouseInput.mkhi.mi.dy = (rect.Y + rect.Height / 2) * 65536 / Screen.PrimaryScreen.Bounds.Height;//设置鼠标垂直位置为区域的中心位置（如果使用绝对坐标，需要乘以65535除以屏幕高度）
+
+            mouseInput.mkhi.mi.mouseData = 0; //设置鼠标滚轮或X按钮的数据为0（不使用）
+
+            mouseInput.mkhi.mi.dwFlags = MouseEventFlags.MOUSEEVENTF_MOVE | MouseEventFlags.MOUSEEVENTF_ABSOLUTE; //设置鼠标事件的标志位为移动和绝对坐标
+
+            mouseInput.mkhi.mi.time = 0; //设置时间戳为0，让系统自动提供
+
+            mouseInput.mkhi.mi.dwExtraInfo = IntPtr.Zero; //设置额外信息为0
+
+            SendInput(1, ref mouseInput, INPUT.Size); //调用SendInput函数，发送一个移动鼠标的输入事件
+
+            mouseInput.mkhi.mi.dwFlags = MouseEventFlags.MOUSEEVENTF_LEFTDOWN | MouseEventFlags.MOUSEEVENTF_ABSOLUTE; //设置鼠标事件的标志位为左键按下
+
+            SendInput(1, ref mouseInput, INPUT.Size); //调用SendInput函数，发送一个按下左键的输入事件
+
+            mouseInput.mkhi.mi.dwFlags = MouseEventFlags.MOUSEEVENTF_LEFTUP | MouseEventFlags.MOUSEEVENTF_ABSOLUTE; //设置鼠标事件的标志位为左键释放
+
+            SendInput(1, ref mouseInput, INPUT.Size); //调用SendInput函数，发送一个释放左键的输入事件
+
+        }//定义一个公共静态方法，用于模拟鼠标左键双击指定区域的中心位置
+        public static void DoubleClickLeftMouseButton(Rectangle rect)
+        {
+            INPUT mouseInput = new INPUT(); //创建一个INPUT结构体实例，用于存储鼠标输入事件的数据
+            mouseInput.type = SendInputEventType.InputMouse; //设置输入事件的类型为鼠标输入事件
+
+            mouseInput.mkhi.mi.dx = (rect.X + rect.Width / 2) * 65536 / Screen.PrimaryScreen!.Bounds.Width; //设置鼠标水平位置为区域的中心位置（如果使用绝对坐标，需要乘以65535除以屏幕宽度）
+            mouseInput.mkhi.mi.dy = (rect.Y + rect.Height / 2) * 65536 / Screen.PrimaryScreen.Bounds.Height; //设置鼠标垂直位置为区域的中心位置（如果使用绝对坐标，需要乘以65535除以屏幕高度）
+
+            mouseInput.mkhi.mi.mouseData = 0; //设置鼠标滚轮或X按钮的数据为0（不使用）
+
+            mouseInput.mkhi.mi.dwFlags = MouseEventFlags.MOUSEEVENTF_MOVE | MouseEventFlags.MOUSEEVENTF_ABSOLUTE; //设置鼠标事件的标志位为移动和绝对坐标
+
+            mouseInput.mkhi.mi.time = 0; //设置时间戳为0，让系统自动提供
+
+            mouseInput.mkhi.mi.dwExtraInfo = IntPtr.Zero; //设置额外信息为0
+
+            SendInput(1, ref mouseInput, INPUT.Size); //调用SendInput函数，发送一个移动鼠标的输入事件
+
+            mouseInput.mkhi.mi.dwFlags = MouseEventFlags.MOUSEEVENTF_LEFTDOWN | MouseEventFlags.MOUSEEVENTF_ABSOLUTE; //设置鼠标事件的标志位为左键按下
+
+            SendInput(1, ref mouseInput, INPUT.Size); //调用SendInput函数，发送一个按下左键的输入事件
+
+            mouseInput.mkhi.mi.dwFlags = MouseEventFlags.MOUSEEVENTF_LEFTUP | MouseEventFlags.MOUSEEVENTF_ABSOLUTE; //设置鼠标事件的标志位为左键释放
+
+            SendInput(1, ref mouseInput, INPUT.Size); //调用SendInput函数，发送一个释放左键的输入事件
+
+            mouseInput.mkhi.mi.dwFlags = MouseEventFlags.MOUSEEVENTF_LEFTDOWN | MouseEventFlags.MOUSEEVENTF_ABSOLUTE; //设置鼠标事件的标志位为左键按下
+
+            SendInput(1, ref mouseInput, INPUT.Size); //调用SendInput函数，发送一个按下左键的输入事件
+
+            mouseInput.mkhi.mi.dwFlags = MouseEventFlags.MOUSEEVENTF_LEFTUP | MouseEventFlags.MOUSEEVENTF_ABSOLUTE; //设置鼠标事件的标志位为左键释放
+
+            SendInput(1, ref mouseInput, INPUT.Size); //调用SendInput函数，发送一个释放左键的输入事件
+        }
+
+        //定义一个公共静态方法，用于模拟鼠标左键长按指定区域的中心位置
+        public static void HoldLeftMouseButton(Rectangle rect)
+        {
+            INPUT mouseInput = new INPUT(); //创建一个INPUT结构体实例，用于存储鼠标输入事件的数据
+            mouseInput.type = SendInputEventType.InputMouse; //设置输入事件的类型为鼠标输入事件
+
+            mouseInput.mkhi.mi.dx = (rect.X + rect.Width / 2) * 65536 / Screen.PrimaryScreen!.Bounds.Width; //设置鼠标水平位置为区域的中心位置（如果使用绝对坐标，需要乘以65535除以屏幕宽度）
+            mouseInput.mkhi.mi.dy = (rect.Y + rect.Height / 2) * 65536 / Screen.PrimaryScreen.Bounds.Height; //设置鼠标垂直位置为区域的中心位置（如果使用绝对坐标，需要乘以65535除以屏幕高度）
+
+            mouseInput.mkhi.mi.mouseData = 0; //设置鼠标滚轮或X按钮的数据为0（不使用）
+
+            mouseInput.mkhi.mi.dwFlags = MouseEventFlags.MOUSEEVENTF_MOVE | MouseEventFlags.MOUSEEVENTF_ABSOLUTE; //设置鼠标事件的标志位为移动和绝对坐标
+
+            mouseInput.mkhi.mi.time = 0; //设置时间戳为0，让系统自动提供
+
+            mouseInput.mkhi.mi.dwExtraInfo = IntPtr.Zero; //设置额外信息为0
+
+            SendInput(1, ref mouseInput, INPUT.Size); //调用SendInput函数，发送一个移动鼠标的输入事件
+
+            mouseInput.mkhi.mi.dwFlags = MouseEventFlags.MOUSEEVENTF_LEFTDOWN | MouseEventFlags.MOUSEEVENTF_ABSOLUTE; //设置鼠标事件的标志位为左键按下
+
+            SendInput(1, ref mouseInput, INPUT.Size); //调用SendInput函数，发送一个按下左键的输入事件
+
+            System.Threading.Thread.Sleep(1000); //让线程暂停一秒，模拟长按的效果
+
+            mouseInput.mkhi.mi.dwFlags = MouseEventFlags.MOUSEEVENTF_LEFTUP | MouseEventFlags.MOUSEEVENTF_ABSOLUTE; //设置鼠标事件的标志位为左键释放
+
+            SendInput(1, ref mouseInput, INPUT.Size); //调用SendInput函数，发送一个释放左键的输入事件
+        }
+
+        //定义一个公共静态方法，用于模拟鼠标右键单击指定区域的中心位置
+        public static void ClickRightMouseButton(Rectangle rect)
+        {
+            INPUT mouseInput = new INPUT(); //创建一个INPUT结构体实例，用于存储鼠标输入事件的数据
+            mouseInput.type = SendInputEventType.InputMouse; //设置输入事件的类型为鼠标输入事件
+
+            mouseInput.mkhi.mi.dx = (rect.X + rect.Width / 2) * 65536 / Screen.PrimaryScreen!.Bounds.Width; //设置鼠标水平位置为区域的中心位置（如果使用绝对坐标，需要乘以65535除以屏幕宽度）
+            mouseInput.mkhi.mi.dy = (rect.Y + rect.Height / 2) * 65536 / Screen.PrimaryScreen.Bounds.Height; //设置鼠标垂直位置为区域的中心位置（如果使用绝对坐标，需要乘以65535除以屏幕高度）
+
+            mouseInput.mkhi.mi.mouseData = 0; //设置鼠标滚轮或X按钮的数据为0（不使用）
+
+            mouseInput.mkhi.mi.dwFlags = MouseEventFlags.MOUSEEVENTF_MOVE | MouseEventFlags.MOUSEEVENTF_ABSOLUTE; //设置鼠标事件的标志位为移动和绝对坐标
+
+            mouseInput.mkhi.mi.time = 0; //设置时间戳为0，让系统自动提供
+
+            mouseInput.mkhi.mi.dwExtraInfo = IntPtr.Zero; //设置额外信息为0
+
+            SendInput(1, ref mouseInput, INPUT.Size); //调用SendInput函数，发送一个移动鼠标的输入事件
+
+            mouseInput.mkhi.mi.dwFlags = MouseEventFlags.MOUSEEVENTF_RIGHTDOWN | MouseEventFlags.MOUSEEVENTF_ABSOLUTE; //设置鼠标事件的标志位为右键按下
+
+            SendInput(1, ref mouseInput, INPUT.Size); //调用SendInput函数，发送一个按下右键的输入事件
+
+            mouseInput.mkhi.mi.dwFlags = MouseEventFlags.MOUSEEVENTF_RIGHTUP | MouseEventFlags.MOUSEEVENTF_ABSOLUTE; //设置鼠标事件的标志位为右键释放
+
+            SendInput(1, ref mouseInput, INPUT.Size); //调用SendInput函数，发送一个释放右键的输入事件
+        }
+
+
+
+
+
+
         public static void Handle(EventKey eventKey, Rectangle rectangle)
         {
             if (eventKey == EventKey.mouseLeftClick)
             {
-                MouseLeftClick(rectangle);
+                ClickLeftMouseButton(rectangle);
                 return;
             }
             if (eventKey == EventKey.mouseLeftDoubleClick)
             {
-                MouseLeftDoubleClick(rectangle);
+                DoubleClickLeftMouseButton(rectangle);
                 return;
             }
             if (eventKey == EventKey.mouseLeftLongClick)
             {
-                MouseLeftLongPress(rectangle);
+                HoldLeftMouseButton(rectangle);
                 return;
             }
             if (eventKey == EventKey.mouseRightClick)
             {
-                MouseRightClick(rectangle);
+                ClickRightMouseButton(rectangle);
                 return;
             }
             throw new Exception($"未处理事件 {eventKey}");
         }
-        [DllImport("user32.dll")]
-        private static extern bool SetCursorPos(int x, int y);
 
-        [DllImport("user32.dll")]
-        private static extern void mouse_event(uint dwFlags, int dx, int dy, uint dwData, int dwExtraInfo);
-
-        private static void MouseLeftClick(Rectangle rect)
-        {
-            int x = rect.Left + rect.Width / 2;
-            int y = rect.Top + rect.Height / 2;
-
-            SetCursorPos(x, y);
-
-            mouse_event(0x02 | 0x04, x, y, 0, 0);
-        }
-
-        private static void MouseRightClick(Rectangle rect)
-        {
-            int x = rect.Left + rect.Width / 2;
-            int y = rect.Top + rect.Height / 2;
-
-            SetCursorPos(x, y);
-
-            mouse_event(0x08 | 0x10, x, y, 0, 0);
-        }
-
-        private static void MouseLeftDoubleClick(Rectangle rect)
-        {
-            int x = rect.Left + rect.Width / 2;
-            int y = rect.Top + rect.Height / 2;
-
-            SetCursorPos(x, y);
-            mouse_event(0x02 | 0x04, x, y, 0, 0);
-            mouse_event(0x02 | 0x04, x, y, 0, 0);
-        }
-        private static void MouseLeftLongPress(Rectangle rect)
-        {
-            int x = rect.Left + rect.Width / 2;
-            int y = rect.Top + rect.Height / 2;
-            mouse_event(0x02, x, y, 0, 0);
-            System.Threading.Thread.Sleep(2000);
-            mouse_event(0x04, x, y, 0, 0);
-        }
     }
 
 

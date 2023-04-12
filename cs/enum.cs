@@ -51,7 +51,7 @@ public enum EventKey
 }
 
 
-public enum Priority1LoopStatus
+public enum InOrderLoopStatus
 {
     // 当前循环序号成功循环完成一次。
     complete,
@@ -59,4 +59,6 @@ public enum Priority1LoopStatus
     timeout,
     // 当前循环序号跳转到其他地方了。
     jump,
+    // 跳转的 Single 不存在。
+    jump_fail,
 }

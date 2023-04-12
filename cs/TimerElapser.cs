@@ -2,9 +2,11 @@ using System.Numerics;
 using System.Timers;
 using LiteDB;
 using Tool;
-
 public class TimerElapser
 {
+
+    // inOder 随时暂停、继续
+    public static EventWaitHandle inOrderEwh = new EventWaitHandle(false, EventResetMode.ManualReset);
 
     public static void startSimultaneouslyTimer()
     {
@@ -32,156 +34,165 @@ public class TimerElapser
     }
 
 
-    public static async Task startInOrderTimer(Single? startSingle)
+    // 以 [single] 为进入点，执行循环全部循环序号，直到达到要求循环次数
+    public static async Task<InOrderLoopStatus> startInOrder(Single single)
     {
-        if (startSingle == null)
+        int times = int.Parse(Db.Instance.GetSth<int>(Db.IN_ORDER_LOOP_EVENT_TIMES, 1));
+
+        for (int i = 0; i < times; i++)
         {
-            // Priority1是最大，但Priority2不一定是最大
-            Single? first = Db.Instance.GetCollection<Single>(Single.TABLE_NAME)
-            .Find(Db.Instance.eventModeQuery(EventMode.InOrder)).OrderByDescending((e) => e.Priority1).FirstOrDefault();
-            if (first == null)
+            InOrderLoopStatus inOrderLoopStatus = await InOrderPriority1LoopARound(single, i == 0);
+            if (inOrderLoopStatus == InOrderLoopStatus.complete)
             {
-                MessageBox.Show("没有添加循环");
-                return;
-            }
-
-            // 查询截图序号对应的 Single
-            var priority1Query = Query.And(Db.Instance.eventModeQuery(EventMode.InOrder), Db.Instance.Priority1Query((int)first!.Priority1!));
-            Single okFirst = Db.Instance.GetCollection<Single>(Single.TABLE_NAME)
-            .Find(priority1Query).OrderByDescending(e => e.Priority2).FirstOrDefault()!;
-
-            // 循环当前截图序号。
-            while (true)
-            {
-                await Task.Delay((int)okFirst.Priority2CheckSecond! * 1000);
-
-                Rectangle? resultRect = GetSingleRectangle(okFirst);
-
-                // 若检测到，则进行操作
-                if (resultRect != null)
-                {
-                    // 触发事件
-                    Tool.Clicker.Handle((EventKey)okFirst.EventKey!, resultRect!.Value);
-
-                    // 查询下一个截图序号对应的 Single
-                    var next2Query = Query.And(Db.Instance.eventModeQuery(EventMode.InOrder), Db.Instance.Priority1Query((int)okFirst.Priority1!));
-                    var finalNext2Query = Query.And(next2Query, Db.Instance.Priority2Query((int)(okFirst.Priority2! + 1)));
-                    Single? next2Single = Db.Instance.GetCollection<Single>(Single.TABLE_NAME)
-                     .FindOne(finalNext2Query);
-
-                    // 若查询到了则递归
-                    if (next2Single != null)
-                    {
-                        await startInOrderTimer(next2Single!);
-                    }
-                    // 若未查询到，则查询当前循环序号是否需要进行循环
-                    else
-                    {
-                        // 当前循环序号需要循环多少次
-                        for (int i = 0; i < (int)okFirst.Priority1LoopTimes!; i++)
-                        {
-
-                        }
-
-                        var next1Query = Query.And(Db.Instance.eventModeQuery(EventMode.InOrder), Db.Instance.Priority1Query((int)okFirst.Priority1! + 1));
-                        Single? next1Single = Db.Instance.GetCollection<Single>(Single.TABLE_NAME)
-                         .Find(next1Query).OrderByDescending(e => e.Priority2).FirstOrDefault();
-                        // 单个循环序号继续循环
-                        if (next1Single != null)
-                        {
-                            // Global.inOrderTimerSingle = next1Single!;
-                            // startInOrderTimer();
-                        }
-                        // 单个循环序号不继续循环
-                        else
-                        {
-
-                        }
-                    }
-                }
-            }
-
-        }
-
-    }
-
-    public static async Task InOrderPriority1Loop(int priority1, int startPriority2)
-    {
-        BsonExpression q1 = Db.Instance.eventModeQuery(EventMode.InOrder);
-        BsonExpression q2 = Db.Instance.Priority1Query(priority1);
-        Single single = Db.Instance.GetCollection<Single>(Single.TABLE_NAME).FindOne(Query.And(q1, q2))!;
-
-    }
-
-
-    // 循环当前循环序号，直到达到要求循环次数
-    public static async Task InOrderPriority2Loop(Single single)
-    {
-        for (int i = 0; i < single.Priority1LoopTimes!; i++)
-        {
-            Priority1LoopStatus priority1LoopStatus = await InOrderPriority2ARound((int)single.Priority1!, (int)single.Priority2!);
-            if (priority1LoopStatus == Priority1LoopStatus.complete)
-            {
-                // await Task.Delay((int)single.Priority2ToNextAfterSecond! * 1000);
                 // 继续当前循环的下一轮。
             }
-            else if (priority1LoopStatus == Priority1LoopStatus.timeout)
+            else if (inOrderLoopStatus == InOrderLoopStatus.timeout)
             {
-                // 当前循环序号循环结束。此处啥也不干，因为 InOrderPriority2ARound 已经处理，显示超时弹窗。
-                return;
+                return inOrderLoopStatus;
             }
-            else if (priority1LoopStatus == Priority1LoopStatus.jump)
+            else if (inOrderLoopStatus == InOrderLoopStatus.jump)
             {
-                // 此当前循环序号循环结束。处啥也不干，因为 InOrderPriority2ARound 已经处理，跳转到新地方了。
-                return;
+                return inOrderLoopStatus;
+            }
+            else if (inOrderLoopStatus == InOrderLoopStatus.jump_fail)
+            {
+                return inOrderLoopStatus;
             }
             else
             {
-                throw new Exception($"未处理 {priority1LoopStatus}");
+                throw new Exception($"未处理 {inOrderLoopStatus}");
             }
+            await Task.Delay(int.Parse(Db.Instance.GetSth<int>(Db.IN_ORDER_LOOP_EVENT_TIMES, 1)) * 1000);
         }
+        MessageBox.Show("循环检测模式已结束");
+        return InOrderLoopStatus.complete;
     }
-
-    // 执行一轮当前循环序号
-    public static async Task<Priority1LoopStatus> InOrderPriority2ARound(int priority1, int startPriority2)
+    // 以 [single] 为进入点，执行一轮全部循环序号
+    public static async Task<InOrderLoopStatus> InOrderPriority1LoopARound(Single single, bool isEnterPoint)
     {
         BsonExpression q1 = Db.Instance.eventModeQuery(EventMode.InOrder);
-        BsonExpression q2 = Db.Instance.Priority1Query(priority1);
-        BsonExpression q3 = Query.LTE("Priority2", new BsonValue(startPriority2));
+        BsonExpression q2 = Query.LTE("Priority1", single.Priority1);
+        List<List<Single>> singless = Db.Instance.GetCollection<Single>(Single.TABLE_NAME)
+        .Find(isEnterPoint ? Query.And(q1, q2) : q1)
+        .OrderByDescending(e => e.Priority1)
+        .ThenByDescending(e => e.Priority2)
+        .GroupBy(e => e.Priority1)
+        .Select(e => e.ToList())
+        .ToList();
+        for (int i = 0; i < singless.Count; i++)
+        {
+            List<Single> singles = singless[i];
+            InOrderLoopStatus inOrderLoopStatus = await InOrderPriority2Loop(singles.Contains(single) ? single : singles.First());
+            if (inOrderLoopStatus == InOrderLoopStatus.complete)
+            {
+                // 继续当前循环的下一轮。
+            }
+            else if (inOrderLoopStatus == InOrderLoopStatus.timeout)
+            {
+                return inOrderLoopStatus;
+            }
+            else if (inOrderLoopStatus == InOrderLoopStatus.jump)
+            {
+                return inOrderLoopStatus;
+            }
+            else if (inOrderLoopStatus == InOrderLoopStatus.jump_fail)
+            {
+                return inOrderLoopStatus;
+            }
+            else
+            {
+                throw new Exception($"未处理 {inOrderLoopStatus}");
+            }
+        }
+        return InOrderLoopStatus.complete;
+    }
+
+
+    // 以 [single] 为进入点，执行循环当前循环序号，直到达到要求循环次数
+    public static async Task<InOrderLoopStatus> InOrderPriority2Loop(Single single)
+    {
+        for (int i = 0; i < single.Priority1LoopTimes!; i++)
+        {
+            Console.WriteLine($"---{single.Priority1LoopTimes}");
+            InOrderLoopStatus inOrderLoopStatus = await InOrderPriority2ARound(single, i == 0);
+            if (inOrderLoopStatus == InOrderLoopStatus.complete)
+            {
+                // 继续当前循环的下一轮。
+            }
+            else if (inOrderLoopStatus == InOrderLoopStatus.timeout)
+            {
+                // 当前循环序号循环结束。此处啥也不干，因为 InOrderPriority2ARound 已经处理，显示超时弹窗。
+                return inOrderLoopStatus;
+            }
+            else if (inOrderLoopStatus == InOrderLoopStatus.jump)
+            {
+                // 此当前循环序号循环结束。此处啥也不干，因为 InOrderPriority2ARound 已经处理，跳转到新地方了。
+                return inOrderLoopStatus;
+            }
+            else if (inOrderLoopStatus == InOrderLoopStatus.jump_fail)
+            {
+                // 此当前循环序号循环结束。此处啥也不干，因为 InOrderPriority2ARound 已经处理，显示跳转失败弹窗。
+                return inOrderLoopStatus;
+            }
+            else
+            {
+                throw new Exception($"未处理 {inOrderLoopStatus}");
+            }
+        }
+        return InOrderLoopStatus.complete;
+    }
+
+    // 以 [single] 为进入点，开始执行一轮当前循环序号
+    public static async Task<InOrderLoopStatus> InOrderPriority2ARound(Single single, bool isEnterPoint)
+    {
+        BsonExpression q1 = Db.Instance.eventModeQuery(EventMode.InOrder);
+        BsonExpression q2 = Db.Instance.Priority1Query((int)single.Priority1!);
+        BsonExpression q3 = Query.LTE("Priority2", new BsonValue((int)single.Priority2!));
         List<Single> singles = Db.Instance.GetCollection<Single>(Single.TABLE_NAME)
-        .Find(Query.And(Query.And(q1, q2), q3)).OrderByDescending(e => e.Priority2).ToList();
+        .Find(isEnterPoint ? Query.And(q1, q2, q3) : Query.And(q1, q2)).OrderByDescending(e => e.Priority2).ToList();
+
         for (int i = 0; i < singles.Count; i++)
         {
-            Single single = singles[i];
+            Single s = singles[i];
             int timeoutSecond = 0;
             while (true)
             {
-                await Task.Delay((int)single.Priority2CheckSecond! * 1000);
-                timeoutSecond += (int)single.Priority2CheckSecond!;
-                if (timeoutSecond > single.Priority2TimeoutSecond!)
+                await Task.Delay((int)s.Priority2CheckSecond! * 1000);
+                timeoutSecond += (int)s.Priority2CheckSecond!;
+                if (timeoutSecond > s.Priority2TimeoutSecond!)
                 {
-                    if (single.Priority2ToWhere == null)
+                    if (s.Priority2ToWhere == null)
                     {
-                        MessageBox.Show($"循环序号：{single.Priority1}，截图序号：{single.Priority2}，检测时间累计超过 {single.Priority2TimeoutSecond} 秒");
-                        return Priority1LoopStatus.timeout;
+                        MessageBox.Show($"循环序号：{s.Priority1}，截图序号：{s.Priority2}，检测时间累计超过 {s.Priority2TimeoutSecond} 秒");
+                        return InOrderLoopStatus.timeout;
                     }
                     else
                     {
-                        //todo: 重新开始。
-                        return Priority1LoopStatus.jump;
+                        Single? whereSingle = Db.Instance.GetCollection<Single>(Single.TABLE_NAME).FindById(s.Priority2ToWhere!);
+                        if (whereSingle == null)
+                        {
+                            MessageBox.Show($"循环序号：{s.Priority1}，截图序号：{s.Priority2}，检测时间累计超过 {s.Priority2TimeoutSecond} 秒，跳转的序号不存在");
+                            return InOrderLoopStatus.jump_fail;
+                        }
+                        else
+                        {
+                            await startInOrder(whereSingle!);
+                            return InOrderLoopStatus.jump;
+                        }
                     }
                 }
 
-                Rectangle? resultRect = GetSingleRectangle(single);
+                Rectangle? resultRect = GetSingleRectangle(s);
                 if (resultRect != null)
                 {
-                    Tool.Clicker.Handle((EventKey)single.EventKey!, resultRect!.Value);
+                    Tool.Clicker.Handle((EventKey)s.EventKey!, resultRect!.Value);
+                    Console.WriteLine($"识别并触发成功:\n区域:{resultRect.Value}\n序号:{s}\n");
                     break;
                 }
             }
         }
 
-        return Priority1LoopStatus.complete;
+        return InOrderLoopStatus.complete;
     }
 
 

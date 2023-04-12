@@ -38,6 +38,7 @@ public class HomeForm : Form
         tabControl.TabPages.Add(tabPage1);
         tabControl.TabPages.Add(tabPage2);
         tabControl.Dock = DockStyle.Fill;
+        // tabControl.Anchor = AnchorStyles.Top | AnchorStyles.Right | AnchorStyles.Bottom | AnchorStyles.Left;
 
         this.Controls.Add(tabControl);
     }
