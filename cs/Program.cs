@@ -17,7 +17,6 @@ class Program
 
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
-
         // 创建窗体实例
         Application.Run(new HomeForm());
 

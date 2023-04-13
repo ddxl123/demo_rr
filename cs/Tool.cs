@@ -423,6 +423,22 @@ namespace Tool
             }
         }
 
+        // 将source复制到target中。
+        public static void CopyObjectProperties(object source, object target)
+        {
+            var sourceProperties = source.GetType().GetProperties();
+            var targetProperties = target.GetType().GetProperties();
+
+            foreach (var sourceProperty in sourceProperties)
+            {
+                var targetProperty = targetProperties.FirstOrDefault(p => p.Name == sourceProperty.Name && p.PropertyType == sourceProperty.PropertyType);
+
+                if (targetProperty != null && targetProperty.CanWrite)
+                {
+                    targetProperty.SetValue(target, sourceProperty.GetValue(source, null), null);
+                }
+            }
+        }
     }
 
 }

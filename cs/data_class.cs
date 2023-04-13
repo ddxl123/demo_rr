@@ -12,7 +12,9 @@ public class Single
         double? similarityThreshold,
         PositionBlockType? positionBlockType,
         EventMode? eventMode,
+        int? eventMillisencondsOnce,
         EventKey? eventKey,
+        int? eventTriggerTimes,
         int? priority1,
         int? priority1LoopTimes,
         int? priority2,
@@ -27,7 +29,10 @@ public class Single
         SimilarityThreshold = similarityThreshold;
         PositionBlockType = positionBlockType;
         EventMode = eventMode;
+
+        EventMillisencondsOnce = eventMillisencondsOnce;
         EventKey = eventKey;
+        EventTriggerTimes = eventTriggerTimes;
         Priority1 = priority1;
         Priority1LoopTimes = priority1LoopTimes;
         Priority2 = priority2;
@@ -74,7 +79,14 @@ public class Single
     // 为 null 表示哪也不跳转
     public ObjectId? Priority2ToWhere { get; set; }
 
+    // 每多少毫秒触发一次
+    public int? EventMillisencondsOnce { get; set; }
+
+    // 触发的事件
     public EventKey? EventKey { get; set; }
+
+    // 事件触发次数
+    public int? EventTriggerTimes { get; set; }
 
     // [Priority1] 重复循环多少次
     public int? Priority1LoopTimes { get; set; }
@@ -82,6 +94,7 @@ public class Single
     // [Priority1] 循环完成后再等待多少秒后进入下一个循环序号
     // 若为0，则立即进入下一个循环序号
     public int? Priority2ToNextAfterSecond { get; set; }
+
 
     public override string ToString()
     {

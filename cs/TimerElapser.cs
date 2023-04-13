@@ -24,12 +24,11 @@ public class TimerElapser
 
         foreach (var single in singles)
         {
-            Rectangle? resultRect = GetSingleRectangle(single);
-            if (resultRect != null)
+            if (trigger(single) != null)
             {
-                Tool.Clicker.Handle((EventKey)single.EventKey!, resultRect!.Value);
                 break;
             }
+
         }
     }
 
@@ -38,10 +37,18 @@ public class TimerElapser
     public static async Task<InOrderLoopStatus> startInOrder(Single single)
     {
         int times = int.Parse(Db.Instance.GetSth<int>(Db.IN_ORDER_LOOP_EVENT_TIMES, 1));
-
         for (int i = 0; i < times; i++)
         {
-            InOrderLoopStatus inOrderLoopStatus = await InOrderPriority1LoopARound(single, i == 0);
+            if (Global.startingEventMode != EventMode.InOrder)
+            {
+                return InOrderLoopStatus.complete;
+            }
+            InOrderLoopStatus inOrderLoopStatus = await InOrderPriority1LoopARound(single, false);
+            // InOrderLoopStatus inOrderLoopStatus = await InOrderPriority1LoopARound(single, i == 0);
+            if (Global.startingEventMode != EventMode.InOrder)
+            {
+                return InOrderLoopStatus.complete;
+            }
             if (inOrderLoopStatus == InOrderLoopStatus.complete)
             {
                 // 继续当前循环的下一轮。
@@ -62,7 +69,15 @@ public class TimerElapser
             {
                 throw new Exception($"未处理 {inOrderLoopStatus}");
             }
+            if (Global.startingEventMode != EventMode.InOrder)
+            {
+                return InOrderLoopStatus.complete;
+            }
             await Task.Delay(int.Parse(Db.Instance.GetSth<int>(Db.IN_ORDER_LOOP_EVENT_TIMES, 1)) * 1000);
+            if (Global.startingEventMode != EventMode.InOrder)
+            {
+                return InOrderLoopStatus.complete;
+            }
         }
         MessageBox.Show("循环检测模式已结束");
         return InOrderLoopStatus.complete;
@@ -82,7 +97,15 @@ public class TimerElapser
         for (int i = 0; i < singless.Count; i++)
         {
             List<Single> singles = singless[i];
+            if (Global.startingEventMode != EventMode.InOrder)
+            {
+                return InOrderLoopStatus.complete;
+            }
             InOrderLoopStatus inOrderLoopStatus = await InOrderPriority2Loop(singles.Contains(single) ? single : singles.First());
+            if (Global.startingEventMode != EventMode.InOrder)
+            {
+                return InOrderLoopStatus.complete;
+            }
             if (inOrderLoopStatus == InOrderLoopStatus.complete)
             {
                 // 继续当前循环的下一轮。
@@ -113,8 +136,16 @@ public class TimerElapser
     {
         for (int i = 0; i < single.Priority1LoopTimes!; i++)
         {
-            Console.WriteLine($"---{single.Priority1LoopTimes}");
-            InOrderLoopStatus inOrderLoopStatus = await InOrderPriority2ARound(single, i == 0);
+            if (Global.startingEventMode != EventMode.InOrder)
+            {
+                return InOrderLoopStatus.complete;
+            }
+            // InOrderLoopStatus inOrderLoopStatus = await InOrderPriority2ARound(single, i == 0);
+            InOrderLoopStatus inOrderLoopStatus = await InOrderPriority2ARound(single, false);
+            if (Global.startingEventMode != EventMode.InOrder)
+            {
+                return InOrderLoopStatus.complete;
+            }
             if (inOrderLoopStatus == InOrderLoopStatus.complete)
             {
                 // 继续当前循环的下一轮。
@@ -157,42 +188,85 @@ public class TimerElapser
             int timeoutSecond = 0;
             while (true)
             {
+                if (Global.startingEventMode != EventMode.InOrder)
+                {
+                    return InOrderLoopStatus.complete;
+                }
                 await Task.Delay((int)s.Priority2CheckSecond! * 1000);
+                if (Global.startingEventMode != EventMode.InOrder)
+                {
+                    return InOrderLoopStatus.complete;
+                }
                 timeoutSecond += (int)s.Priority2CheckSecond!;
                 if (timeoutSecond > s.Priority2TimeoutSecond!)
                 {
-                    if (s.Priority2ToWhere == null)
-                    {
-                        MessageBox.Show($"循环序号：{s.Priority1}，截图序号：{s.Priority2}，检测时间累计超过 {s.Priority2TimeoutSecond} 秒");
-                        return InOrderLoopStatus.timeout;
-                    }
-                    else
-                    {
-                        Single? whereSingle = Db.Instance.GetCollection<Single>(Single.TABLE_NAME).FindById(s.Priority2ToWhere!);
-                        if (whereSingle == null)
-                        {
-                            MessageBox.Show($"循环序号：{s.Priority1}，截图序号：{s.Priority2}，检测时间累计超过 {s.Priority2TimeoutSecond} 秒，跳转的序号不存在");
-                            return InOrderLoopStatus.jump_fail;
-                        }
-                        else
-                        {
-                            await startInOrder(whereSingle!);
-                            return InOrderLoopStatus.jump;
-                        }
-                    }
-                }
 
-                Rectangle? resultRect = GetSingleRectangle(s);
-                if (resultRect != null)
+                    return InOrderLoopStatus.timeout;
+                    // 有 bug
+                    // if (s.Priority2ToWhere == null)
+                    // {
+                    //     MessageBox.Show($"循环序号：{s.Priority1}，截图序号：{s.Priority2}，检测时间累计超过 {s.Priority2TimeoutSecond} 秒");
+                    //     return InOrderLoopStatus.timeout;
+                    // }
+                    // else
+                    // {
+                    //     Single? whereSingle = Db.Instance.GetCollection<Single>(Single.TABLE_NAME).FindById(s.Priority2ToWhere!);
+                    //     if (whereSingle == null)
+                    //     {
+                    //         MessageBox.Show($"循环序号：{s.Priority1}，截图序号：{s.Priority2}，检测时间累计超过 {s.Priority2TimeoutSecond} 秒，跳转的序号不存在");
+                    //         return InOrderLoopStatus.jump_fail;
+                    //     }
+                    //     else
+                    //     {
+                    //         if (Global.startingEventMode != EventMode.InOrder)
+                    //         {
+                    //             return InOrderLoopStatus.complete;
+                    //         }
+                    //         await startInOrder(whereSingle!);
+                    //         if (Global.startingEventMode != EventMode.InOrder)
+                    //         {
+                    //             return InOrderLoopStatus.complete;
+                    //         }
+                    //         return InOrderLoopStatus.jump;
+                    //     }
+                    // }
+                }
+                var hasTrigger = trigger(s);
+                if (hasTrigger != null)
                 {
-                    Tool.Clicker.Handle((EventKey)s.EventKey!, resultRect!.Value);
-                    Console.WriteLine($"识别并触发成功:\n区域:{resultRect.Value}\n序号:{s}\n");
+                    for (int ie = 0; ie < s.EventTriggerTimes - 1; ie++)
+                    {
+                        if (Global.startingEventMode != EventMode.InOrder)
+                        {
+                            return InOrderLoopStatus.complete;
+                        }
+                        await Task.Delay((int)s.EventMillisencondsOnce!);
+                        if (Global.startingEventMode != EventMode.InOrder)
+                        {
+                            return InOrderLoopStatus.complete;
+                        }
+                        trigger(s);
+                    }
                     break;
                 }
             }
         }
 
         return InOrderLoopStatus.complete;
+    }
+
+    // 返回触发的single和rectangle，若为 null，则未识别到。
+    public static (Single, Rectangle)? trigger(Single s)
+    {
+
+        Rectangle? resultRect = GetSingleRectangle(s);
+        if (resultRect != null)
+        {
+            Tool.Clicker.Handle((EventKey)s.EventKey!, resultRect!.Value);
+            Console.WriteLine($"识别并触发成功:\n区域:{resultRect.Value}\n序号:循环序号{s.Priority1}-截图序号{s.Priority2}\n");
+            return ((Single, Rectangle)?)(s, resultRect!);
+        }
+        return null;
     }
 
 

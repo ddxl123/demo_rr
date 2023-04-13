@@ -1,7 +1,6 @@
-using System.Runtime.InteropServices;
 using LiteDB;
 using Tool;
-using System.ComponentModel;
+using CommunityToolkit.Maui.Alerts;
 
 public class FormDragDropListSimultaneously : Form
 {
@@ -32,10 +31,9 @@ public class FormDragDropListSimultaneously : Form
         // 显示列表中的元素
         ReShowItems();
 
+        bodyFlowLayoutPanel.Controls.Add(startOrCancelControl());
         bodyFlowLayoutPanel.Controls.Add(headerControl());
         bodyFlowLayoutPanel.Controls.Add(eventFlowLayoutPanel);
-        var v = startOrCancelControl();
-        this.Controls.Add(v);
         this.Controls.Add(bodyFlowLayoutPanel);
     }
 
@@ -271,7 +269,9 @@ public class FormDragDropListSimultaneously : Form
                         similarityThreshold: 0.7,
                         positionBlockType: PositionBlockType.left_top,
                         eventMode: EventMode.Simultaneously,
+                        eventMillisencondsOnce: 0,
                         eventKey: EventKey.mouseLeftClick,
+                        eventTriggerTimes: 1,
                         priority1: 0,
                         priority1LoopTimes: 3,
                         priority2ToNextAfterSecond: null,
@@ -290,7 +290,9 @@ public class FormDragDropListSimultaneously : Form
                         similarityThreshold: 0.7,
                         positionBlockType: PositionBlockType.left_top,
                         eventMode: EventMode.Simultaneously,
+                        eventMillisencondsOnce: 0,
                         eventKey: EventKey.mouseLeftClick,
+                        eventTriggerTimes: 1,
                         priority1: maxSingleResult.Priority1 + 1,
                         priority1LoopTimes: 3,
                         priority2ToNextAfterSecond: null,
@@ -379,6 +381,10 @@ public class FormDragDropListSimultaneously : Form
     // 截选图
     private Control pictureBoxControl(Single item)
     {
+        var column = new FlowLayoutPanel();
+        column.AutoSize = true;
+        column.FlowDirection = FlowDirection.TopDown;
+
         var pictureBox = new PictureBox();
         ToolTip toolTip1 = new ToolTip();
         toolTip1.SetToolTip(pictureBox, "点击此区域进行截取图片");
@@ -413,20 +419,38 @@ public class FormDragDropListSimultaneously : Form
             }
 
             // 存放
-            item.ImagePath = $"{K.ASSETS_SINGLE}/{Guid.NewGuid().ToString()}.png";
+            var savePath = $"{K.ASSETS_SINGLE}/{Guid.NewGuid().ToString()}.png";
             // 截图
-            new ScreenRegionSelector(item.ImagePath).ShowDialog();
-
+            var screenRegionSelector = new ScreenRegionSelector(savePath, new Size(20, 20));
+            screenRegionSelector.ShowDialog();
+            if (screenRegionSelector.screenRegionSelectorResult == ScreenRegionSelectorResult.ok)
+            {
+                item.ImagePath = savePath;
+                Db.Instance.insertOrModifySingleEntity(item);
+                pictureBox.Image = Image.FromFile(item.ImagePath);
+            }
             // 显示全部窗体
             foreach (Form item in Application.OpenForms)
             {
                 item.Visible = true;
             }
-
-            Db.Instance.insertOrModifySingleEntity(item);
-            ReShowItems();
         };
-        return pictureBox;
+
+        var testButton = new Button() { AutoSize = true, Text = "识别测试" };
+        testButton.MouseClick += async (s, e) =>
+        {
+            pictureBox.Visible = false;
+            await Task.Delay(100);
+            var result = TimerElapser.trigger(item);
+            var show = MessageBox.Show(result == null ?
+                  "未识别到" :
+                  $"已识别到并触发成功！\n区域:{result!.Value.Item2}\n序号:{result!.Value.Item1.Priority1}\n");
+            pictureBox.Visible = true;
+        };
+
+        column.Controls.Add(pictureBox);
+        column.Controls.Add(testButton);
+        return column;
     }
 
 

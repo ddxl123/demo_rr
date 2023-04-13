@@ -1,4 +1,13 @@
-// 调用 new ScreenRegionSelector().Show() 即可。
+
+public enum ScreenRegionSelectorResult
+{
+    ok,
+    // 截图尺寸太小
+    tooSmall,
+    // 取消
+    cancel,
+}
+// 调用 new ScreenRegionSelector().ShowDialog() 即可。
 public class ScreenRegionSelector : Form
 {
 
@@ -7,7 +16,11 @@ public class ScreenRegionSelector : Form
     private bool isDragging;
     private string? imagePath;
 
-    public ScreenRegionSelector(string imagePath)
+    private Size? minSize;
+
+    public ScreenRegionSelectorResult screenRegionSelectorResult = ScreenRegionSelectorResult.cancel;
+
+    public ScreenRegionSelector(string imagePath, Size? minSize)
     {
         this.imagePath = imagePath;
         this.FormBorderStyle = FormBorderStyle.None;
@@ -15,7 +28,7 @@ public class ScreenRegionSelector : Form
         this.BackColor = Color.Black;
         this.Opacity = 0.3;
         this.DoubleBuffered = true;
-
+        this.minSize = minSize;
 
         this.KeyDown += new KeyEventHandler(EscapeKeyExample_KeyDown);
     }
@@ -27,6 +40,7 @@ public class ScreenRegionSelector : Form
             this.Close();
         }
     }
+
 
     protected override void OnMouseDown(MouseEventArgs e)
     {
@@ -64,8 +78,18 @@ public class ScreenRegionSelector : Form
 
         // 关闭选择框
         this.Dispose();
+        if (minSize != null)
+        {
+            if (selectionRect.Size.Width < minSize.Value.Width && selectionRect.Size.Height < minSize.Value.Height)
+            {
+                screenRegionSelectorResult = ScreenRegionSelectorResult.tooSmall;
+                MessageBox.Show($"截图尺寸太小！");
+                return;
+            }
 
+        }
         Tool.Capturer.CaptureFullScreen(imagePath!, selectionRect);
+        screenRegionSelectorResult = ScreenRegionSelectorResult.ok;
     }
 
     protected override void OnPaint(PaintEventArgs e)
