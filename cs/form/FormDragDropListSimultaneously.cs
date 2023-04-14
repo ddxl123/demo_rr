@@ -31,6 +31,19 @@ public class FormDragDropListSimultaneously : Form
         // 显示列表中的元素
         ReShowItems();
 
+        // var v = new HotkeyControl();
+        // v.Location = new Point(10, 10);
+        // v.Width = 200;
+        // var h = new HotKeyControl();
+
+        // var b = new Button();
+        // b.MouseClick += async (s, e) =>
+        // {
+        //     await Task.Delay(2000);
+        //     HotKeyControl.TriggerSendKeys(h.shortcut);
+        // };
+        // bodyFlowLayoutPanel.Controls.Add(h);
+        // bodyFlowLayoutPanel.Controls.Add(b);
         bodyFlowLayoutPanel.Controls.Add(startOrCancelControl());
         bodyFlowLayoutPanel.Controls.Add(headerControl());
         bodyFlowLayoutPanel.Controls.Add(eventFlowLayoutPanel);

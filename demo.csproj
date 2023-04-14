@@ -9,7 +9,7 @@
     <!-- 以管理员身份才能运行 -->
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- 不打开黑框框 -->
-    <OutputType>WinExe</OutputType>
+    <!-- <OutputType>WinExe</OutputType> -->
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,5 +23,5 @@
     <PackageReference Include="System.Threading" Version="4.3.0" />
     <PackageReference Include="CommunityToolkit.Maui" Version="5.0.0" />
     <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
-  </ItemGroup>
+  </ItemGroup> 
 </Project>
