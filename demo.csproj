@@ -9,7 +9,7 @@
     <!-- 以管理员身份才能运行 -->
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- 不打开黑框框 -->
-    <!-- <OutputType>WinExe</OutputType> -->
+    <OutputType>WinExe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>

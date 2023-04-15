@@ -47,7 +47,15 @@ public static class Global
             foreach (string file in files)
             {
                 var result = Db.Instance.GetCollection<Single>(Single.TABLE_NAME).FindAll();
-                if (!result.Select((e) => { return e.ImagePath; }).Contains(Path.GetFileName(file)))
+                bool isDelete = true;
+                foreach (var item in result)
+                {
+                    if (item.ImagePath == Path.GetFileName(file))
+                    {
+                        isDelete = false;
+                    }
+                }
+                if (isDelete)
                 {
                     try
                     {
